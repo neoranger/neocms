@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} |{% endblock %}
+
+{% block head %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>{{ post.title }} - Tu Blog en Español</title>
+{% endblock %}
+
+{% block content %}
+    <nav>
+        <a href="{{ url_for('index') }}">← Volver al inicio</a>
+    </nav>
+
+    <article class="prose" style="margin-top: 50px;">
+        <header style="margin-bottom: 30px;">
+            <small style="color: #999;">{{ post.date }}</small>
+            <h1 style="margin-top: 10px;">{{ post.title }}</h1>
+        </header>
+
+        <div class="content">
+            {{ content | safe }}
+        </div>
+    </article>
+
+    <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee;">
+        <p style="font-size: 0.8rem; color: #999;">Publicado con NeoCMS</p>
+    </footer>
+{% endblock %}

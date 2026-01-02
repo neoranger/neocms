@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    container_name: NeoCMS
+    volumes:
+      - .:/app
+      - ./content:/app/content  # Sincroniza tus posts con el host
+      - ./static:/app/static
+      - ./static/uploads:/app/static/uploads
+      - ./stats.json:/app/stats.json
+    env_file:
+      - .env
+    restart: always

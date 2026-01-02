@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Panel de Control |{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Panel Admin - NeoCMS</title>
+{% endblock %}
+
+{% block content %}
+    <nav style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--gray);">
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <a href="{{ url_for('index') }}" style="text-decoration: none; font-size: 0.9rem;">← Ver Sitio Público</a>
+            <h2 style="margin: 0;">Panel Admin</h2>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-size: 0.8rem; color: #666;">Sesión Activa</span>
+            <a href="{{ url_for('logout') }}" 
+               style="background: #ff4444; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: bold;">
+               Cerrar Sesión
+            </a>
+        </div>
+    </nav>
+
+    <div style="margin-bottom: 40px; display: flex; gap: 15px;">
+        <a href="{{ url_for('edit_post') }}" 
+           class="button-link" style="background: var(--primary);">
+           + Crear Nuevo Post
+        </a>
+        <a href="{{ url_for('backup') }}" 
+           class="button-link" style="background: #28a745;">
+           Descargar Backup (.zip)
+        </a>
+        <a href="/admin/export-stats" style="color: var(--primary); font-size: 0.8rem;">📥 Descargar backup de estadísticas</a>
+    </div>
+
+    <div class="stats-container" style="height: 150px; display: flex; align-items: flex-end; gap: 10px; padding-top: 20px;">
+        {% for day in stats_days %}
+            <div class="bar-wrapper" style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
+                <div class="bar" 
+                    style="width: 100%; 
+                        background: var(--primary); 
+                        height: {{ (day.count / max_visits) * 100 }}%; 
+                        border-radius: 4px 4px 0 0;
+                        min-height: 2px;
+                        position: relative;"
+                    title="{{ day.count }} visitas">
+                </div> 
+                <span style="font-size: 0.7rem; margin-top: 5px;">{{ day.date }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+        <h4 style="margin-top: 0;">🔥 Contenido más leído</h4>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            {% for slug, count in top_posts %}
+            <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border);">
+                <span style="font-family: monospace;">/post/{{ slug }}</span>
+                <strong style="color: var(--primary);">{{ count }} visitas</strong>
+            </li>
+            {% else %}
+                <li style="color: var(--secondary);">Aún no hay datos de lectura.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+<!-- TABLA DE LA GESTION DE LOS POSTS -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr style="border-bottom: 2px solid var(--gray); text-align: left;">
+                <th style="padding: 12px;">Título</th>
+                <th style="padding: 12px;">Estado</th>
+                <th style="padding: 12px;">Fecha</th>
+                <th style="padding: 12px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for post in posts %}
+            <tr style="border-bottom: 1px solid var(--gray);">
+                <td style="padding: 12px;"><strong>{{ post.title }}</strong></td>
+                <td style="padding: 12px;">
+                        {% if post.slug.startswith('draft_') %}
+                            <span style="background: #ffeaa7; color: #d35400; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">📝 Borrador</span>
+                        {% else %}
+                            <span style="background: #c2fbd7; color: #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">🚀 Público</span>
+                        {% endif %}
+                </td>
+                <td style="padding: 12px; color: #666;">{{ post.date }}</td>
+                <td style="padding: 12px; display: flex; gap: 15px;">
+                    <a href="{{ url_for('edit_post', slug=post.slug) }}" style="color: #0070f3;">Editar</a>
+                    <form action="{{ url_for('delete_post', slug=post.slug) }}" method="POST" onsubmit="return confirm('¿Eliminar este post permanentemente?')">
+                        <button type="submit" style="background: none; color: #ff4444; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: 1rem;">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="padding: 40px; text-align: center; color: #999;">
+                    No hay posts todavía. ¡Crea el primero!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

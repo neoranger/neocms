@@ -1,0 +1,9 @@
+# Framework principal
+Flask==3.0.0
+
+# Procesamiento de archivos Markdown y Metadatos
+python-frontmatter==1.1.0
+Markdown==3.5.1
+
+# Manejo de variables de entorno (opcional pero recomendado)
+python-dotenv==1.0.0
