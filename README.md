@@ -50,3 +50,5 @@ El sistema registra visitas únicas diarias y totales. Gracias al uso de Docker 
 
 ### Sugerencias:
 Creá los directorios antes para que tengan los permisos adecuados, así como el archivo stats.json para que docker lo interprete como archivo y no como directorio.
+
+![NeoCMS_logo.png](NeoCMS_logo.png)
