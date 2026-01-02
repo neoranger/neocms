@@ -51,4 +51,22 @@ El sistema registra visitas únicas diarias y totales. Gracias al uso de Docker 
 ### Sugerencias:
 Creá los directorios antes para que tengan los permisos adecuados, así como el archivo stats.json para que docker lo interprete como archivo y no como directorio.
 
-![NeoCMS_logo.png](NeoCMS_logo.png)
+Imágenes:
+
+> Portada:
+
+![/docs/media/blog_portada.PNG](blog_portada.PNG)
+
+> Post:
+
+![/docs/media/blog_post.PNG](blog_post.PNG)
+
+> Panel de Administración:
+
+![/docs/media/blog_panel_admin.PNG](blog_panel_admin.PNG)
+
+> Escribiendo un post en Markdown y viéndo su preview para chequear como queda:
+
+![/docs/media/blog_post_new](blog_post_new)
+
+![/docs/media/NeoCMS_logo.png](NeoCMS_logo.png)
