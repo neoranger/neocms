@@ -51,22 +51,16 @@ El sistema registra visitas únicas diarias y totales. Gracias al uso de Docker 
 ### Sugerencias:
 Creá los directorios antes para que tengan los permisos adecuados, así como el archivo stats.json para que docker lo interprete como archivo y no como directorio.
 
-Imágenes:
+## 📸 Capturas de pantalla
 
-> Portada:
+Aquí puedes ver el NeoCMS en acción:
 
-![Portada](docs/media/blog_portada.PNG)
+| Home Page | Post |
+| :---: | :---: |
+| ![Portada](docs/media/blog_portada.PNG) | ![Post](docs/media/blog_post.PNG) |
+| Panel Admin | Escribiendo un post |
+| ![Admin](docs/media/blog_panel_admin.PNG) | ![Nuevo Post](docs/media/blog_post_new.PNG) |
 
-> Post:
-
-![Post](docs/media/blog_post.PNG)
-
-> Panel de Administración:
-
-![Admin](docs/media/blog_panel_admin.PNG)
-
-> Escribiendo un post en Markdown y viéndo su preview para chequear como queda:
-
-![Nuevo Post](docs/media/blog_post_new.PNG)
-
-![Logo](docs/media/NeoCMS_logo.png)
+<p align="center">
+  <img src="docs/media/NeoCMS_logo.png" alt="NeoCMS Logo" width="200">
+</p>
