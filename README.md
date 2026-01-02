@@ -55,18 +55,18 @@ Imágenes:
 
 > Portada:
 
-![/docs/media/blog_portada.PNG](blog_portada.PNG)
+![Portada](docs/media/blog_portada.PNG)
 
 > Post:
 
-![/docs/media/blog_post.PNG](blog_post.PNG)
+![Post](docs/media/blog_post.PNG)
 
 > Panel de Administración:
 
-![/docs/media/blog_panel_admin.PNG](blog_panel_admin.PNG)
+![Admin](docs/media/blog_panel_admin.PNG)
 
 > Escribiendo un post en Markdown y viéndo su preview para chequear como queda:
 
-![/docs/media/blog_post_new](blog_post_new)
+![Nuevo Post](docs/media/blog_post_new.PNG)
 
-![/docs/media/NeoCMS_logo.png](NeoCMS_logo.png)
+![Logo](docs/media/NeoCMS_logo.png)
