@@ -25,7 +25,7 @@ NeoCMS es un sistema de gestión de contenidos (CMS) ligero, privado y ultra-rá
 Cloná el repositorio:
 
 ```
-git clone https://github.com/tu-usuario/neocms.git
+git clone https://github.com/neoranger/neocms.git
 cd neocms
 ```
 
