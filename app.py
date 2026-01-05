@@ -57,33 +57,32 @@ def log_visit(path='home'):
     if request.cookies.get('is_admin'):
         return
 
-    stats = {'daily': {}, 'posts': {}}
+    stats = {'daily': {}, 'posts': {}, 'total': 0} # Agregamos total inicial
     
-    # Verificamos que exista Y que sea un archivo
     if os.path.exists(STATS_FILE) and os.path.isfile(STATS_FILE):
         try:
             with open(STATS_FILE, 'r') as f:
                 content = f.read()
-                if content: # Si el archivo no está vacío
+                if content:
                     stats = json.loads(content)
         except (json.JSONDecodeError, Exception):
-            # Si el archivo está corrupto, empezamos de cero
-            stats = {'daily': {}, 'posts': {}}
+            stats = {'daily': {}, 'posts': {}, 'total': 0}
     
     today = datetime.now().strftime('%Y-%m-%d')
     
-    # Inicializar estructuras si no existen en el JSON cargado
     if 'daily' not in stats: stats['daily'] = {}
     if 'posts' not in stats: stats['posts'] = {}
+    if 'total' not in stats: stats['total'] = 0 # Asegurar que exista el total
 
+    # Incrementos
+    stats['total'] += 1
     stats['daily'][today] = stats['daily'].get(today, 0) + 1
+    
     if path != 'home':
         stats['posts'][path] = stats['posts'].get(path, 0) + 1
     
     with open(STATS_FILE, 'w') as f:
-        json.dump(stats, f, indent=4) # indent=4 para que sea legible
-
-
+        json.dump(stats, f, indent=4)
 
 # Asegúrate de que Flask sepa qué tema cargar al inicio
 @app.before_request
@@ -378,15 +377,15 @@ def rss():
     rss_xml = '<?xml version="1.0" encoding="UTF-8" ?>'
     rss_xml += '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">'
     rss_xml += '<channel>'
-    rss_xml += '<title>Blog Title</title>'
-    rss_xml += '<link>https://example.com</link>'
-    rss_xml += '<description>Últimas entradas de Blog</description>'
+    rss_xml += '<title>NeoSite Blog</title>'
+    rss_xml += '<link>https://blog.neosite.com.ar</link>'
+    rss_xml += '<description>Últimas entradas de NeoSite Blog</description>'
     
     base_url = request.url_root.rstrip('/')
     
     for post in published_posts:
         # Limpiamos un poco el contenido si es necesario o lo enviamos tal cual
-        content = post.get('content', '').replace('src="/static/', 'src="https://example.com/static/')
+        content = post.get('content', '').replace('src="/static/', 'src="https://blog.neosite.com.ar/static/')
         post_url = f"{base_url}/post/{post['slug']}"
         
         rss_xml += '<item>'
@@ -405,6 +404,27 @@ def rss():
 @login_required
 def export_stats():
     return send_file(STATS_FILE, as_attachment=True)
+    
+@app.route('/admin/stats')
+@login_required
+def full_stats():
+    if not os.path.exists(STATS_FILE):
+        return "No hay estadísticas registradas aún."
+
+    with open(STATS_FILE, 'r') as f:
+        stats = json.load(f)
+
+    # Ordenamos los días para que el historial sea cronológico
+    sorted_days = sorted(stats.get('daily', {}).items(), reverse=True)
+    
+    # Ordenamos los posts más leídos (Top 10)
+    sorted_posts = sorted(stats.get('posts', {}).items(), key=lambda x: x[1], reverse=True)[:10]
+
+    return render_template('full_stats.html', 
+                           total=stats.get('total', 0),
+                           history=sorted_days, 
+                           top_posts=sorted_posts)
 
 if __name__ == '__main__':
+    # host='0.0.0.0' es fundamental en Docker
     app.run(host='0.0.0.0', port=5000, debug=True)

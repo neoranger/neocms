@@ -31,7 +31,12 @@
            class="button-link" style="background: #28a745;">
            Descargar Backup (.zip)
         </a>
-        <a href="/admin/export-stats" style="color: var(--primary); font-size: 0.8rem;">📥 Descargar backup de estadísticas</a>
+        <a href="{{ url_for('full_stats') }}" style="background: #0070f3; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px;">
+            📊 Ver Historial Completo de Estadísticas
+        </a>
+        <a href="/admin/export-stats" style="background: #0070f3; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px;">
+            📥 Descargar backup de estadísticas
+        </a>
     </div>
 
     <div class="stats-container" style="height: 150px; display: flex; align-items: flex-end; gap: 10px; padding-top: 20px;">
