@@ -1,66 +1,113 @@
 # NeoCMS 🚀
-NeoCMS es un sistema de gestión de contenidos (CMS) ligero, privado y ultra-rápido, diseñado para blogs personales que priorizan la simplicidad y el rendimiento. Construido con Python (Flask), utiliza archivos Markdown como base de datos y Docker para un despliegue sin fricciones.
 
-✨ Características principales
-- Markdown-Based: Escribí tus posts en Markdown con soporte para Frontmatter (metadatos como títulos, fechas, tags y categorías).
-- Sistema de Borradores (Drafts): Guardá posts en modo borrador; solo serán visibles en el blog cuando decidas publicarlos.
-- Analíticas Privadas: Panel de estadísticas integrado que muestra visitas de los últimos 7 días con gráficos auto-escalables.
-- Feed RSS 2.0: Generación automática de feed para lectores de noticias, incluyendo el contenido completo de los artículos.
-- SEO & Social: Metadatos automáticos para Twitter Cards y Open Graph, incluyendo descripción y tiempo estimado de lectura.
-- Interfaz Adaptativa: Diseño limpio con modo oscuro automático, sidebar de categorías/tags y buscador integrado.
-- Dockerized: Listo para desplegar en cualquier servidor con un solo comando.
+**NeoCMS** es un motor de blog ligero, rápido y moderno construido en Python con Flask. Diseñado para ser minimalista pero potente, cuenta con gestión de contenido basada en Markdown, un panel de administración seguro y una arquitectura de microservicios para la gestión de comentarios.
 
-🛠️ Tecnologías utilizadas
-- Backend: Python 3.x + Flask
-- Frontend: Jinja2 Templates, CSS3 (Custom Variables)
-- Datos: Python-Frontmatter (Markdown), JSON (Stats)
-- Despliegue: Docker & Docker Compose
+![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat&logo=python)
+![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=flat&logo=docker)
+![Status](https://img.shields.io/badge/Status-Active-success)
 
-### 🚀 Instalación y Despliegue
-**Requisitos previos**
+## ✨ Características Principales
 
-**Docker y Docker Compose** instalados.
+* **📝 Redacción en Markdown:** Escribe tus posts en archivos `.md` simples con metadatos YAML (Frontmatter).
+* **🌓 Modo Oscuro/Claro:** Detección automática y toggle manual para la preferencia del usuario.
+* **💬 Sistema de Comentarios (Microservicio):**
+    * Arquitectura separada en contenedor propio para mayor rendimiento.
+    * Moderación previa (los comentarios requieren aprobación).
+    * Diseño moderno tipo "burbuja".
+* **🔔 Notificaciones en Tiempo Real:** Integración con **Telegram Bot** para avisar al administrador cuando llega un nuevo comentario.
+* **📊 Estadísticas Persistentes:**
+    * Registro de visitas totales históricas y diarias.
+    * Gráficas de los últimos 7 días en el panel de administración.
+    * Datos persistentes ante reinicios de contenedores.
+* **🛡️ Panel de Administración:**
+    * Editor de posts integrado.
+    * Gestión de subida de imágenes.
+    * Aprobación/Eliminado de comentarios.
+    * Toggle global para activar/desactivar comentarios.
 
-#### Pasos para el despliegue
-Cloná el repositorio:
+## 🛠️ Arquitectura
 
+El proyecto utiliza **Docker Compose** para orquestar dos servicios principales:
+
+1.  **CMS (Web):** La aplicación principal que sirve el blog y el admin (`app.py`).
+2.  **Comments Service:** Microservicio dedicado a recibir y guardar comentarios (`comments_service/comments.py`).
+
+Ambos comparten volúmenes de datos para persistencia y configuración.
+
+## 🚀 Instalación y Despliegue
+
+### Requisitos Previos
+* Docker y Docker Compose instalados.
+* (Opcional) Nginx Proxy Manager para gestión de SSL/Dominios.
+
+### 1. Clonar el Repositorio
 ```
-git clone https://github.com/neoranger/neocms.git
+git clone [https://github.com/tu-usuario/neocms.git](https://github.com/tu-usuario/neocms.git)
 cd neocms
 ```
+### 2. Configuración de Entorno (.env)
+Crea un archivo .env en la raíz del proyecto. Este archivo no se sube al repositorio por seguridad.
+```
+# Configuración General
+SECRET_KEY=una_clave_muy_segura_y_larga
+ADMIN_PASSWORD=tu_password_para_el_admin
+FLASK_ENV=production
 
-Configurá las credenciales: Editá el archivo **app.py** para cambiar las credenciales de acceso al Panel Admin (si usas autenticación básica).
-Levantá el contenedor:
+# Configuración de Telegram (Notificaciones)
+TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_CHAT_ID=123456789
+```
+
+### 3. Inicializar Archivos de Datos
+Para evitar errores en el primer arranque, asegúrate de crear el archivo de estadísticas inicial en la raíz:
+```
+echo '{ "total": 0, "daily": {}, "posts": {} }' > stats.json
+```
+
+### 4. Ejecutar con Docker Compose
+Construye y levanta los contenedores:
+```
+docker-compose up --build -d
+```
+
+### El sitio estará disponible en:
+
+- Blog: http://localhost:5000 (o el puerto configurado).
+- API Comentarios: Internamente en puerto 5001.
+
+### 📂 Estructura del Proyecto
 
 ```
-docker compose up -d --build
+neocms/
+├── content/              # Tus posts en formato Markdown (.md)
+├── static/
+│   ├── uploads/          # Imágenes subidas desde el admin
+│   └── css/              # Estilos (style.css)
+├── templates/            # Plantillas HTML (Jinja2)
+├── comments_service/     # Carpeta del microservicio
+│   └── comments.py       # Lógica de la API de comentarios
+├── comments_data/        # Persistencia de comentarios (JSONs)
+├── app.py                # Aplicación principal Flask
+├── Dockerfile            # Definición de imagen (compartida)
+├── docker-compose.yml    # Orquestación de servicios
+├── requirements.txt      # Dependencias Python
+└── stats.json            # Base de datos de visitas (Persistente)
 ```
 
-El sitio estará disponible en http://localhost:5000.
+### 🤖 Uso del Bot de Telegram
+- Crea un bot con @BotFather en Telegram para obtener tu TELEGRAM_TOKEN.
+- Obtén tu ID de usuario con @userinfobot para el TELEGRAM_CHAT_ID.
+- Agrega estas variables al .env.
+- ¡Listo! Recibirás un mensaje cada vez que alguien comente en tu blog.
 
-📁 Estructura del Proyecto
-- /posts: Carpeta donde se almacenan los archivos .md. Los archivos que comienzan con draft_ no se muestran al público.
-- /static: Archivos CSS, imágenes y recursos del frontend.
-- /templates: Plantillas HTML (Index, Post, Admin, Editor).
-- app.py: Lógica principal del servidor y gestión de estadísticas.
-- stats.json: Registro de visitas (persitente mediante volúmenes de Docker). **Crealo antes de levnatar el contenedor**
+### 🛡️ Copias de Seguridad (Backup)
+Los datos importantes residen en carpetas mapeadas como volúmenes. Para hacer un backup completo, guarda:
+- Carpeta content/
+- Carpeta comments_data/
+- Carpeta static/uploads/
+- Archivo stats.json
+- Archivo .env
 
-📊 Estadísticas y Persistencia
-El sistema registra visitas únicas diarias y totales. Gracias al uso de Docker Volumes, los datos de visitas y los posts se mantienen a salvo aunque el contenedor se reinicie o se actualice.
+---
+Desarrollado con ❤️ usando Flask & Docker.
 
-### Sugerencias:
-Creá los directorios antes para que tengan los permisos adecuados, así como el archivo stats.json para que docker lo interprete como archivo y no como directorio.
-
-## 📸 Capturas de pantalla
-
-Aquí puedes ver el NeoCMS en acción:
-
-| Home Page | Post |
-| :---: | :---: |
-| ![Portada](docs/media/blog_portada.PNG) | ![Post](docs/media/blog_post.PNG) |
-| Panel Admin | Escribiendo un post |
-| ![Admin](docs/media/blog_panel_admin.PNG) | ![Nuevo Post](docs/media/blog_post_new.PNG) |
-
-<p align="center">
-  <img src="docs/media/NeoCMS_logo.png" alt="NeoCMS Logo" width="200">
-</p>
