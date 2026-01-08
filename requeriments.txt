@@ -7,3 +7,8 @@ Markdown==3.5.1
 
 # Manejo de variables de entorno (opcional pero recomendado)
 python-dotenv==1.0.0
+
+requests
+flask
+flask-cors
+requests

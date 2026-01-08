@@ -3,13 +3,31 @@ services:
     build: .
     ports:
       - "5000:5000"
-    container_name: NeoCMS
+    container_name: NeoCMS_github
     volumes:
       - .:/app
       - ./content:/app/content  # Sincroniza tus posts con el host
       - ./static:/app/static
       - ./static/uploads:/app/static/uploads
       - ./stats.json:/app/stats.json
+      - ./comments_data/comments:/app/comments_data
+      - ./config.json:/app/config.json
     env_file:
       - .env
+    restart: always
+
+  comments:
+    build: ./comments_service
+    command: python comments_service/comments.py
+    container_name: NeoCMS_comments_github
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+      - TELEGRAM_TOKEN=TU_TOKEN_DEL_BOT_TELEGRAM
+      - TELEGRAM_CHAT_ID=TU_ID_DE_USUARIO_DE_TELEGRAM
+    volumes:
+      - .:/app
+      - ./comments_data:/app/data # Persistencia de comentarios
     restart: always

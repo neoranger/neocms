@@ -12,7 +12,6 @@
             <a href="{{ url_for('index') }}" style="text-decoration: none; font-size: 0.9rem;">← Ver Sitio Público</a>
             <h2 style="margin: 0;">Panel Admin</h2>
         </div>
-        
         <div style="display: flex; align-items: center; gap: 15px;">
             <span style="font-size: 0.8rem; color: #666;">Sesión Activa</span>
             <a href="{{ url_for('logout') }}" 
@@ -37,6 +36,9 @@
         <a href="/admin/export-stats" style="background: #0070f3; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-bottom: 20px;">
             📥 Descargar backup de estadísticas
         </a>
+        <a href="{{ url_for('admin_comments') }}" style="background: #333; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; border: 1px solid #555;">
+            💬 Gestionar Comentarios
+        </a>
     </div>
 
     <div class="stats-container" style="height: 150px; display: flex; align-items: flex-end; gap: 10px; padding-top: 20px;">
@@ -55,6 +57,12 @@
             </div>
         {% endfor %}
     </div>
+    
+    <div class="stats-card total-card">
+        <h3>Visitas Históricas</h3>
+        <div class="big-number">{{ total_visits }}</div>
+        <p>Total acumulado desde el inicio</p>
+    </div>
 
     <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
         <h4 style="margin-top: 0;">🔥 Contenido más leído</h4>
@@ -68,6 +76,17 @@
                 <li style="color: var(--secondary);">Aún no hay datos de lectura.</li>
             {% endfor %}
         </ul>
+    </div>
+    
+    <div style="margin: 20px 0; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;">
+        <span style="margin-right: 15px;">Sistema de Comentarios: 
+            <strong>{{ 'ENCENDIDO' if comments_on else 'APAGADO' }}</strong>
+        </span>
+        <a href="{{ url_for('toggle_comments') }}" 
+            style="background: {{ '#d32f2f' if comments_on else '#2e7d32' }}; 
+            color: white; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 0.9rem;">
+            {{ 'Apagar Comentarios' if comments_on else 'Encender Comentarios' }}
+        </a>
     </div>
 
 <!-- TABLA DE LA GESTION DE LOS POSTS -->

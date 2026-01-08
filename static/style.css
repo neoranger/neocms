@@ -266,3 +266,91 @@ footer a:hover {
     transform: scale(1.1);
     display: inline-block;
 }
+
+/* Contenedor principal de comentarios */
+#comments-container {
+    margin-top: 20px;
+}
+
+/* Cada burbuja de comentario */
+.comment-bubble {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    transition: transform 0.2s ease;
+}
+
+.comment-bubble:hover {
+    border-color: #444;
+    transform: translateY(-2px);
+}
+
+/* Nombre del autor y fecha */
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #2a2a2a;
+    padding-bottom: 5px;
+}
+
+.comment-author {
+    color: #007bff; /* Un azul suave para resaltar el nombre */
+    font-weight: bold;
+}
+
+.comment-date {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.comment-text {
+    line-height: 1.6;
+    color: #ddd;
+    margin: 0;
+}
+
+#comment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 500px;
+}
+
+#comment-form input, #comment-form textarea {
+    background: #121212;
+    border: 1px solid #333;
+    color: white;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+#comment-form input:focus, #comment-form textarea:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+#btn-enviar {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#btn-enviar:hover {
+    background: #0056b3;
+}
+
+#comment-count {
+    color: #666;
+    font-size: 1.1rem;
+    font-weight: normal;
+    margin-left: 5px;
+}

@@ -11,9 +11,13 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import zipfile
 import json
+import glob
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 STATS_FILE = os.path.join(BASE_DIR, 'stats.json')
+COMMENTS_DATA_DIR = 'comments_data/'
+load_dotenv() # Esto carga las variables de tu archivo .env
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default-key-for-dev')
@@ -54,35 +58,43 @@ def login_required(f):
     return decorated_function
 
 def log_visit(path='home'):
+    # Si es admin, no contamos la visita
     if request.cookies.get('is_admin'):
         return
 
-    stats = {'daily': {}, 'posts': {}, 'total': 0} # Agregamos total inicial
+    # Estructura base
+    stats = {'daily': {}, 'posts': {}, 'total': 0}
     
-    if os.path.exists(STATS_FILE) and os.path.isfile(STATS_FILE):
+    # Intentamos leer. Si falla, NO reseteamos inmediatamente, intentamos recuperar.
+    if os.path.exists(STATS_FILE) and os.path.getsize(STATS_FILE) > 0:
         try:
             with open(STATS_FILE, 'r') as f:
-                content = f.read()
-                if content:
-                    stats = json.loads(content)
-        except (json.JSONDecodeError, Exception):
-            stats = {'daily': {}, 'posts': {}, 'total': 0}
-    
+                stats = json.load(f)
+        except json.JSONDecodeError:
+            print("Error: stats.json corrupto. Se iniciará uno nuevo pero verifica backups.")
+            # Aquí podrías guardar una copia del corrupto si quisieras forense
+            pass
+
     today = datetime.now().strftime('%Y-%m-%d')
     
-    if 'daily' not in stats: stats['daily'] = {}
-    if 'posts' not in stats: stats['posts'] = {}
-    if 'total' not in stats: stats['total'] = 0 # Asegurar que exista el total
+    # Aseguramos que existan las claves (por si viene de una versión vieja)
+    stats.setdefault('daily', {})
+    stats.setdefault('posts', {})
+    stats.setdefault('total', 0)
 
-    # Incrementos
+    # INCREMENTOS
     stats['total'] += 1
     stats['daily'][today] = stats['daily'].get(today, 0) + 1
     
     if path != 'home':
         stats['posts'][path] = stats['posts'].get(path, 0) + 1
     
-    with open(STATS_FILE, 'w') as f:
-        json.dump(stats, f, indent=4)
+    # Guardado atómico (más seguro)
+    try:
+        with open(STATS_FILE, 'w') as f:
+            json.dump(stats, f, indent=4)
+    except Exception as e:
+        print(f"Error guardando estadísticas: {e}")
 
 # Asegúrate de que Flask sepa qué tema cargar al inicio
 @app.before_request
@@ -194,37 +206,67 @@ def post(slug):
 
     post = frontmatter.load(path)
     content_html = markdown(post.content, extensions=['tables', 'fenced_code', 'nl2br'])
-    return render_template('post.html', post=post.metadata, content=content_html)
+    log_visit(slug)
+    
+    comments_enabled = True
+    if os.path.exists('config.json'):
+        try:
+            with open('config.json', 'r') as f:
+                conf_data = json.load(f)
+                comments_enabled = conf_data.get('comments_enabled', True)
+        except:
+            comments_enabled = True # Si falla la lectura, por defecto prendidos
+    
+    # Leemos la URL desde el entorno, si no existe usamos localhost por defecto
+    comments_api_base = os.getenv('COMMENTS_API_URL', 'http://localhost:5003')
+    return render_template('post.html', post=post.metadata, content=content_html, comments_enabled=comments_enabled, slug=slug, comments_api_url=comments_api_base)
 
 @app.route('/admin')
 @login_required
 def admin_list():
     posts = get_posts()
-    stats = {'daily': {}, 'posts': {}} # Valor por defecto
+    
+    stats = {'daily': {}, 'posts': {}, 'total': 0} # Valores por defecto
+    
     if os.path.exists(STATS_FILE):
         try:
             with open(STATS_FILE, 'r') as f:
                 content = f.read().strip()
-                if content: # Solo intentamos cargar si hay texto
+                if content:
                     stats = json.loads(content)
-        except json.JSONDecodeError:
-            stats = {'daily': {}, 'posts': {}} # Si el JSON está mal, usamos el vacío
-    # Obtener el top 3 de posts más leídos
+        except Exception as e:
+            print(f"Error cargando stats: {e}")
+            # Si falla, se queda con los valores por defecto (0)
+
+    # Procesar datos
     post_stats = stats.get('posts', {})
     top_posts = sorted(post_stats.items(), key=lambda item: item[1], reverse=True)[:3]
+    
     daily_stats = stats.get('daily', {})
-    sorted_daily = dict(sorted(daily_stats.items(), reverse=True)[:7])
     sorted_stats = dict(sorted(daily_stats.items(), reverse=True)[:7])
-    daily_visits = stats.get('daily', {})
-    # Obtenemos las visitas de los últimos 7 días
+    
+    # Gráfico últimos 7 días
     last_7_days = []
     for i in range(6, -1, -1):
         d = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
-        last_7_days.append({'date': d[-2:], 'count': daily_visits.get(d, 0)})
+        last_7_days.append({'date': d[-2:], 'count': daily_stats.get(d, 0)})
     
-    # Calculamos el máximo para la escala (mínimo 1 para evitar división por cero)
     max_visits = max([day['count'] for day in last_7_days] + [1])
-    return render_template('admin.html', posts=posts, stats=sorted_stats,top_posts=top_posts,stats_days=last_7_days, max_visits=max_visits)
+    
+    config = get_config()
+    comments_on = config.get('comments_enabled', True)
+    
+    # Recuperamos el total histórico
+    total_visits = stats.get('total', 0)
+
+    return render_template('admin.html', 
+                           posts=posts, 
+                           stats=sorted_stats,
+                           top_posts=top_posts,
+                           stats_days=last_7_days, 
+                           max_visits=max_visits,
+                           comments_on=comments_on,
+                           total_visits=total_visits)
 
 @app.route('/admin/edit/<slug>', methods=['GET', 'POST'])
 @app.route('/admin/new', methods=['GET', 'POST'], defaults={'slug': None})
@@ -424,6 +466,120 @@ def full_stats():
                            total=stats.get('total', 0),
                            history=sorted_days, 
                            top_posts=sorted_posts)
+
+@app.route('/admin/comments')
+@login_required
+def admin_comments():
+    all_comments = []
+    
+    # 1. Definimos la ruta de búsqueda primero
+    # Asegúrate de que COMMENTS_DATA_DIR esté definida al inicio de app.py
+    search_path = os.path.join(COMMENTS_DATA_DIR, "*.json")
+    
+    # 2. Ahora sí podemos imprimirla para debuguear
+    print(f"DEBUG: Buscando comentarios en: {search_path}") 
+    
+    # 3. Buscamos los archivos
+    files = glob.glob(search_path)
+    print(f"DEBUG: Archivos encontrados: {files}")
+
+    for file_path in files:
+        # El slug es el nombre del archivo sin el .json
+        slug = os.path.basename(file_path).replace('.json', '')
+        
+        try:
+            with open(file_path, 'r') as f:
+                post_comments = json.load(f)
+                for c in post_comments:
+                    # Le inyectamos el slug para que el template sepa de qué post es
+                    c['slug'] = slug 
+                    all_comments.append(c)
+        except Exception as e:
+            print(f"Error leyendo {file_path}: {e}")
+    
+    # Ordenar por ID (timestamp) descendente para ver los nuevos arriba
+    all_comments.sort(key=lambda x: x.get('id', 0), reverse=True)
+    
+    return render_template('admin_comments.html', comments=all_comments)
+
+@app.route('/admin/comments/approve/<slug>/<float:comment_id>')
+@login_required
+def approve_comment(slug, comment_id):
+    file_path = os.path.join(COMMENTS_DATA_DIR, f"{slug}.json")
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            comments = json.load(f)
+        
+        for c in comments:
+            if c['id'] == comment_id:
+                c['approved'] = True
+                break
+        
+        with open(file_path, 'w') as f:
+            json.dump(comments, f, indent=4)
+            
+    return redirect(url_for('admin_comments'))
+
+@app.route('/admin/comments/delete/<slug>/<float:comment_id>')
+@login_required
+def delete_comment(slug, comment_id):
+    file_path = os.path.join(COMMENTS_DATA_DIR, f"{slug}.json")
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            comments = json.load(f)
+        
+        # Creamos una nueva lista excluyendo el comentario con ese ID
+        new_comments = [c for c in comments if c['id'] != comment_id]
+        
+        # Si el archivo queda vacío después de borrar, podemos optar por eliminarlo 
+        # o guardarlo como una lista vacía. Guardarlo vacío es más seguro.
+        with open(file_path, 'w') as f:
+            json.dump(new_comments, f, indent=4)
+            
+    return redirect(url_for('admin_comments'))
+
+@app.route('/admin/settings/toggle-comments')
+@login_required
+def toggle_comments():
+    config_path = 'config.json'
+    config = {'comments_enabled': True} # Valor por defecto
+
+    # Intentamos leer el archivo con seguridad
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r') as f:
+                content = f.read().strip()
+                if content: # Solo intentamos cargar si hay texto
+                    config = json.loads(content)
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Error cargando config, reseteando: {e}")
+            config = {'comments_enabled': True}
+
+    # Invertimos el estado de forma segura
+    current_state = config.get('comments_enabled', True)
+    config['comments_enabled'] = not current_state
+    
+    # Guardamos (esto escribirá el JSON correctamente y dejará de estar vacío)
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=4)
+        
+    return redirect(url_for('admin_list'))
+
+def get_config():
+    config_path = 'config.json'
+    default_config = {'comments_enabled': True}
+    
+    if not os.path.exists(config_path):
+        return default_config
+        
+    try:
+        with open(config_path, 'r') as f:
+            content = f.read().strip()
+            if not content:  # Si el archivo está vacío
+                return default_config
+            return json.loads(content)
+    except (json.JSONDecodeError, Exception):
+        return default_config
 
 if __name__ == '__main__':
     # host='0.0.0.0' es fundamental en Docker

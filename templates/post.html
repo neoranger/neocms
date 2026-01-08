@@ -24,6 +24,85 @@
         </div>
     </article>
 
+    {% if comments_enabled %}
+    <hr>
+        <section id="comments-section" style="margin-top: 50px;">
+        <h3 id="comments-title">Comentarios <span id="comment-count"></span></h3>
+        <div id="comments-container">Cargando comentarios...</div>
+
+        <h4 style="margin-top: 30px;">Deja un comentario</h4>
+            <form id="comment-form">
+                <input type="text" id="comment-author" placeholder="Tu nombre" required>
+                <textarea id="comment-text" placeholder="Tu comentario..." required></textarea>
+                <button type="submit" id="btn-enviar">Enviar comentario</button>
+            </form>
+        </section>
+
+        <script>
+            const currentSlug = "{{ slug }}";
+            const API_BASE = "{{ comments_api_url }}".replace(/\/$/, "");
+            const API_URL = `${API_BASE}/comments/${currentSlug}`;
+
+            async function loadComments() {
+                try {
+                    const response = await fetch(API_URL, { method: 'GET' });
+                    if (!response.ok) return;
+            
+                        const comments = await response.json();
+                        const container = document.getElementById('comments-container');
+                        const countElement = document.getElementById('comment-count');
+                        
+                        if (!container || !Array.isArray(comments)) return;
+                        
+                        const approved = comments.filter(c => c.approved);
+                        
+                        // Actualizamos el contador (ej: "(3)")
+                        if (countElement) {
+                            countElement.innerText = approved.length > 0 ? `(${approved.length})` : "";
+                        }
+                        
+                        if (approved.length === 0) {
+                            container.innerHTML = '<p style="color: #888;">No hay comentarios aún.</p>';
+                            return;
+                        }
+
+                        container.innerHTML = approved.map(c => `
+                            <div class="comment-bubble">
+                                <div class="comment-header">
+                                    <span class="comment-author">@${c.author}</span>
+                                    <span class="comment-date">${c.date}</span>
+                                </div>
+                                <p class="comment-text">${c.text}</p>
+                            </div>
+                        `).join('');
+                } catch (e) { console.error("Error cargando comentarios:", e); }
+            }
+
+                document.getElementById('comment-form').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const payload = {
+                        author: document.getElementById('comment-author').value,
+                        text: document.getElementById('comment-text').value
+                    };
+
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        alert("✅ Enviado para moderación");
+                        document.getElementById('comment-form').reset();
+                    }
+                } catch (error) { alert("Error de conexión"); }
+            };
+
+            loadComments();
+        </script>
+    
+    {% endif %}
+
     <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee;">
         <p style="font-size: 0.8rem; color: #999;">Publicado con NeoCMS</p>
     </footer>
