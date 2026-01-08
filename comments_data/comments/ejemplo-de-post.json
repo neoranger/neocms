@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1767646026.826975,
+        "author": "Aprobado",
+        "text": "Esto es un comentario aprobado",
+        "date": "2026-01-05 20:47",
+        "approved": true
+    },
+    {
+        "id": 1767646037.025056,
+        "author": "Desaprobado",
+        "text": "Esto es un comentario desaprobado",
+        "date": "2026-01-05 20:47",
+        "approved": false
+    }
+]

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Moderación de Comentarios</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #333; text-align: left; }
+        .status-pending { color: #ffca28; }
+        .status-approved { color: #4caf50; }
+        .btn { padding: 5px 10px; border-radius: 4px; text-decoration: none; color: white; }
+        .btn-approve { background: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Moderación de Comentarios</h1>
+    <a href="{{ url_for('admin_list') }}">Volver al panel</a>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Post</th>
+                <th>Autor</th>
+                <th>Comentario</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in comments %}
+            <tr>
+                <td>{{ c.slug }}</td>
+                <td>{{ c.author }}</td>
+                <td>{{ c.text }}</td>
+                <td class="{{ 'status-approved' if c.approved else 'status-pending' }}">
+                    {{ 'Aprobado' if c.approved else 'Pendiente' }}
+                </td>
+                <td>
+                    {% if not c.approved %}
+                        <a href="{{ url_for('approve_comment', slug=c.slug, comment_id=c.id) }}" 
+                        class="btn btn-approve">Aprobar</a>
+                    {% endif %}
+    
+                    <a href="{{ url_for('delete_comment', slug=c.slug, comment_id=c.id) }}" 
+                        class="btn btn-delete" 
+                        style="background: #c62828; margin-left: 10px;"
+                        onclick="return confirm('¿Estás seguro de que quieres eliminar este comentario?')">
+                        Eliminar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
