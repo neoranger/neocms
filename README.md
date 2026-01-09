@@ -9,7 +9,6 @@
 ## ✨ Características Principales
 
 * **📝 Redacción en Markdown:** Escribe tus posts en archivos `.md` simples con metadatos YAML (Frontmatter).
-* **🌓 Modo Oscuro/Claro:** Detección automática y toggle manual para la preferencia del usuario.
 * **💬 Sistema de Comentarios (Microservicio):**
     * Arquitectura separada en contenedor propio para mayor rendimiento.
     * Moderación previa (los comentarios requieren aprobación).
