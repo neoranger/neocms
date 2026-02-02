@@ -1,0 +1,15 @@
+Timestamp,User_ID,Action,Detail,OS,Location,IP
+2026-01-30 15:57:19,8dc5c182,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 15:57:30,8dc5c182,VIEW,/login,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:37:01,91ab71bd,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:37:04,91ab71bd,VIEW,/post/hace-a-os-que-no-pruebo-otra-distro,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:37:08,91ab71bd,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:37:10,91ab71bd,VIEW,/post/vuelven-los-comentarios,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:37:18,91ab71bd,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:41:23,91ab71bd,VIEW,/post/de-una-idea-al-ping-pong-manager-construyendo-un-sistema-de-torneos-full-stack-con-flask-y-docker,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:41:33,91ab71bd,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:42:09,91ab71bd,VIEW,/post/hace-a-os-que-no-pruebo-otra-distro,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:42:15,91ab71bd,VIEW,home,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:42:18,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:42:24,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-01-30 16:42:48,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
