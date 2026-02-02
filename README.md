@@ -104,7 +104,7 @@ Los datos importantes residen en carpetas mapeadas como volúmenes. Para hacer u
 - Carpeta content/
 - Carpeta comments_data/
 - Carpeta static/uploads/
-- Archivo stats.json
+- Archivo stats.csv
 - Archivo .env
 
 ---
