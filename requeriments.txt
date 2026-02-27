@@ -12,3 +12,7 @@ requests
 flask
 flask-cors
 requests
+filelock
+pyotp
+qrcode
+pillow

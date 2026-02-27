@@ -10,13 +10,12 @@
 </head>
 <body>
     
-    <!-- BARRA DE NAVEGACION -->    
     <nav style="background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 0; position: sticky; top: 0; z-index: 1000;">
         <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
-            <a href="/" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); text-decoration: none;">TU BLOG<span style="color: var(--text);">EN ESPAÑOL</span></a>
+            <a href="/" style="font-weight: 800; font-size: 1.2rem; color: var(--primary); text-decoration: none;">  <span style="color: var(--text);"> </span></a>
             <div style="display: flex; gap: 20px; align-items: center;">
                 <a href="/" style="color: var(--text); text-decoration: none; font-size: 0.9rem;">Blog</a>
-                <a href="https://podcasts.example.com" target="_blank" style="color: var(--text); text-decoration: none; font-size: 0.9rem;">🎙️ Podcasts</a>
+                <a href="https://podcasts.neosite.com.ar" target="_blank" style="color: var(--text); text-decoration: none; font-size: 0.9rem;">🎙️ Podcasts</a>
                 <a href="https://github.com/neoranger" target="_blank" style="color: var(--text); text-decoration: none; font-size: 0.9rem;">💻 GitHub</a>
             
                 {% if session.get('logged_in') %}
@@ -26,25 +25,24 @@
         </div>
     </nav>
     
-    <!-- IMAGEN DE PORTADA -->
+    {% if not request.path.startswith('/admin') %}
     <div class="container" style="margin-top: 20px;">
         <a href="/">
             <img src="{{ url_for('static', filename='banner.png') }}" 
                  alt="NeoSite Blog" 
-                style="width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                 style="width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
         </a>
     </div>
+    {% endif %}
 
-    <!-- CUERPO DE LA WEB -->
     <div class="container">
         {% block content %}{% endblock %}
     </div>
 
-    <!-- FOOTER -->
     <footer style="background: var(--card-bg); border-top: 1px solid var(--border); margin-top: 80px; padding: 40px 0;">
         <div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center;">
             <div>
-                <p style="margin: 0; font-weight: bold;">Tu Blog en Español</p>
+                <p style="margin: 0; font-weight: bold;">NeoSite Blog</p>
                 <small style="color: var(--secondary);">© 2025 - Hecho con NeoCMS</small>
             </div>
         

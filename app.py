@@ -12,12 +12,17 @@ import json
 import glob
 from dotenv import load_dotenv
 from filelock import FileLock
-import csv     # <--- NUEVO
-import uuid    # <--- NUEVO
+import csv
+import uuid
 import requests
-from collections import Counter # <--- NUEVO (Para contar estadísticas rápido)
+from collections import Counter
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+TOTP_FILE = os.path.join(BASE_DIR, '.totp_secret')
 
 # CAMBIO 1: Archivo CSV en lugar de JSON
 STATS_FILE = os.path.join(BASE_DIR, 'stats.csv') 
@@ -205,18 +210,81 @@ def load_theme():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        # Validar Contraseña primero
         if request.form.get('password') == os.environ.get('ADMIN_PASSWORD'):
+            # NO logueamos todavía. Marcamos "pre-autenticación" en la sesión
+            session['pre_auth'] = True
+            return redirect(url_for('login_2fa'))
+        else:
+            return render_template('login.html', error="Contraseña incorrecta")
+            
+    return render_template('login.html')
+
+@app.route('/login/2fa', methods=['GET', 'POST'])
+def login_2fa():
+    # Seguridad: Si no puso la contraseña bien antes, afuera.
+    if not session.get('pre_auth'):
+        return redirect(url_for('login'))
+
+    # Verificamos si ya existe una configuración 2FA guardada
+    totp_secret = None
+    first_time = False
+    
+    if os.path.exists(TOTP_FILE):
+        with open(TOTP_FILE, 'r') as f:
+            totp_secret = f.read().strip()
+    else:
+        # PRIMERA VEZ: Generamos secreto nuevo
+        first_time = True
+        if 'temp_secret' not in session:
+            session['temp_secret'] = pyotp.random_base32()
+        totp_secret = session['temp_secret']
+
+    # Objeto TOTP
+    totp = pyotp.TOTP(totp_secret)
+
+    if request.method == 'POST':
+        code = request.form.get('code')
+        
+        # Validar código
+        if totp.verify(code):
+            # ¡ÉXITO!
+            
+            # Si era la primera vez, GUARDAMOS el secreto permanentemente ahora
+            if first_time:
+                with open(TOTP_FILE, 'w') as f:
+                    f.write(totp_secret)
+                session.pop('temp_secret', None) # Limpieza
+
+            # Limpiamos pre_auth y damos acceso full
+            session.pop('pre_auth', None)
             session['logged_in'] = True
+            
             resp = make_response(redirect(url_for('admin_list')))
             resp.set_cookie('is_admin', 'true', max_age=30*24*60*60)
             return resp
-    return render_template('login.html')
+        else:
+            return render_template('login_2fa.html', error="Código incorrecto", qr_data=None)
+
+    # Lógica GET (Mostrar formulario)
+    qr_b64 = None
+    if first_time:
+        # Generar QR para escanear
+        uri = totp.provisioning_uri(name='Admin', issuer_name='NeoCMS')
+        img = qrcode.make(uri)
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        qr_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+    return render_template('login_2fa.html', first_time=first_time, qr_code=qr_b64)
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('pre_auth', None) # Por seguridad
+    session.pop('temp_secret', None)
     resp = make_response(redirect(url_for('index')))
-    resp.set_cookie('is_admin', '', expires=0) # Borramos cookie admin
+    resp.set_cookie('is_admin', '', expires=0)
     return resp
 
 @app.route('/')
