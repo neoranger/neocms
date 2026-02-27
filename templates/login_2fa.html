@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación en Dos Pasos - NeoCMS</title>
+    <style>
+        body { font-family: sans-serif; background: #0a0a0a; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-box { background: #161616; padding: 40px; border-radius: 10px; border: 1px solid #333; width: 100%; max-width: 350px; text-align: center; }
+        h2 { margin-top: 0; color: #0070f3; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; text-align: center; font-size: 1.2rem; letter-spacing: 5px; }
+        button { width: 100%; padding: 12px; background: #0070f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        button:hover { background: #005bb5; }
+        .error { color: #ff4444; margin-bottom: 15px; font-size: 0.9rem; }
+        .qr-container { background: white; padding: 10px; display: inline-block; border-radius: 8px; margin-bottom: 20px; }
+        p { font-size: 0.9rem; line-height: 1.5; color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        {% if first_time %}
+            <h2>🔒 Configurar 2FA</h2>
+            <p>Escanea este código con <strong>Google Authenticator</strong> o <strong>Authy</strong>:</p>
+            <div class="qr-container">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" width="200">
+            </div>
+            <p>Luego ingresa el código de 6 dígitos que aparece en tu app:</p>
+        {% else %}
+            <h2>🔐 Verificación 2FA</h2>
+            <p>Ingresa el código temporal de tu autenticador:</p>
+        {% endif %}
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <input type="text" name="code" placeholder="000000" maxlength="6" autofocus autocomplete="off" required>
+            <button type="submit">Verificar</button>
+        </form>
+    </div>
+</body>
+</html>
