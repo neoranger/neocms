@@ -31,3 +31,4 @@ Thumbs.db
 
 #Archivos locales
 stats.csv
+.totp_secret
