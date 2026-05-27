@@ -1,138 +1,160 @@
 {% extends "base.html" %}
-{% block title %}Panel de Control |{% endblock %}
+{% block title %}Panel de Control | NeoSite Blog{% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>Panel Admin - NeoCMS</title>
+    <!-- style.css ya se incluye en base.html -->
 {% endblock %}
 
 {% block content %}
-    <nav style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--gray); margin-bottom: 30px;">
-        <div style="display: flex; gap: 20px; align-items: center;">
-            <a href="{{ url_for('index') }}" style="text-decoration: none; font-size: 0.9rem; color: var(--accent);">← Ver Sitio Público</a>
-            <h2 style="margin: 0;">Panel Admin</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; margin-bottom: 30px; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <h2 style="margin: 0; font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; color: var(--text-primary);">
+                <i class="fa-solid fa-gauge-high" style="color: var(--accent-primary); margin-right: 8px;"></i>Panel Admin
+            </h2>
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <span style="font-size: 0.8rem; color: #666;">Sesión Activa</span>
-            <a href="{{ url_for('logout') }}" 
-               style="background: #ff4444; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: bold;">
-               Cerrar Sesión
+            <span style="font-size: 0.85rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px;">
+                <span style="width: 8px; height: 8px; background-color: var(--accent-primary); border-radius: 50%; display: inline-block;"></span> Sesión Activa
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger" style="padding: 6px 16px; font-size: 0.8rem;">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
             </a>
         </div>
-    </nav>
+    </div>
 
-    <div style="margin-bottom: 40px; display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="{{ url_for('edit_post') }}" class="button-link" style="background: var(--primary); text-decoration: none; color: white; padding: 10px 20px; border-radius: 5px;">
-            + Crear Nuevo Post
+    <!-- Barra de acciones rápidas -->
+    <div style="margin-bottom: 40px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="{{ url_for('edit_post') }}" class="btn">
+            <i class="fa-solid fa-circle-plus"></i> Crear Nuevo Post
         </a>
-        <a href="{{ url_for('backup') }}" class="button-link" style="background: #28a745; text-decoration: none; color: white; padding: 10px 20px; border-radius: 5px;">
-            📦 Backup ZIP
+        <a href="{{ url_for('backup') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-file-zipper" style="color: var(--accent-primary);"></i> Backup ZIP
         </a>
-        <a href="{{ url_for('full_stats') }}" style="background: #0070f3; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
-            📊 Ver Estadísticas Full
+        <a href="{{ url_for('full_stats') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-chart-line" style="color: var(--accent-primary);"></i> Ver Estadísticas
         </a>
-        <a href="{{ url_for('export_stats') }}" style="border: 1px solid #0070f3; color: #0070f3; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
-            📥 Descargar CSV
+        <a href="{{ url_for('export_stats') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-file-csv" style="color: var(--accent-primary);"></i> Descargar CSV
         </a>
-        <a href="{{ url_for('admin_comments') }}" style="background: #333; color: white; padding: 10px 15px; border-radius: 5px; text-decoration: none; border: 1px solid #555;">
-            💬 Comentarios
+        <a href="{{ url_for('admin_comments') }}" class="btn btn-secondary">
+            <i class="fa-solid fa-comments" style="color: var(--accent-primary);"></i> Comentarios
         </a>
     </div>
 
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 40px;">
+    <!-- Grid de Métricas y Actividad -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 40px;" class="admin-grid">
         
-        <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--gray);">
-            <h4 style="margin-top: 0; color: #888;">Actividad Reciente (7 días)</h4>
-            <div class="stats-container" style="height: 150px; display: flex; align-items: flex-end; gap: 10px; padding-top: 20px;">
+        <!-- Gráfico de Actividad -->
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column;">
+            <h4 style="margin-top: 0; color: var(--text-primary); font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; border-left: 3px solid var(--accent-primary); padding-left: 8px;">
+                Visitas Recientes (7 días)
+            </h4>
+            <div class="stats-container" style="height: 160px; display: flex; align-items: flex-end; gap: 12px; padding-top: 25px; margin-top: auto;">
                 {% for day in stats_days %}
                     <div class="bar-wrapper" style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
                         {% set height_pct = (day.count / max_visits * 100) if max_visits > 0 else 0 %}
                         
                         <div class="bar" 
                              style="width: 100%; 
-                                    background: var(--primary); 
+                                    background: var(--accent-gradient); 
                                     height: {{ height_pct }}%; 
-                                    border-radius: 4px 4px 0 0;
-                                    min-height: 2px;
-                                    opacity: 0.8;"
+                                    border-radius: 6px 6px 0 0;
+                                    min-height: 3px;
+                                    transition: var(--transition);
+                                    box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);"
                              title="{{ day.count }} visitas">
                         </div> 
-                        <span style="font-size: 0.7rem; margin-top: 5px; color: #666;">{{ day.date }}</span>
+                        <span style="font-size: 0.7rem; margin-top: 8px; color: var(--text-muted); font-weight: 500;">{{ day.date }}</span>
                     </div>
                 {% endfor %}
             </div>
         </div>
 
+        <!-- Cards de datos y Top Posts -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="stats-card total-card" style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--gray); text-align: center;">
-                <h3 style="margin: 0; font-size: 0.9rem; color: #888;">Visitas Históricas</h3>
-                <div class="big-number" style="font-size: 2.5rem; font-weight: bold; color: var(--primary); margin: 10px 0;">{{ total_visits }}</div>
-                <p style="margin: 0; font-size: 0.8rem; color: #666;">Total acumulado</p>
+            <div class="card" style="margin-bottom: 0; text-align: center; position: relative; overflow: hidden; padding: 20px;">
+                <div style="position: absolute; width: 80px; height: 80px; background: rgba(16, 185, 129, 0.08); filter: blur(30px); top: -20px; right: -20px; border-radius: 50%;"></div>
+                <h3 style="margin: 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Visitas Históricas</h3>
+                <div class="big-number" style="font-size: 2.8rem; font-weight: 800; color: var(--accent-primary); margin: 5px 0; font-family: var(--font-head); line-height: 1.1;">{{ total_visits }}</div>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Total acumulado en el sitio</p>
             </div>
 
-            <div style="background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--gray); flex-grow: 1;">
-                <h4 style="margin-top: 0; font-size: 0.9rem; color: #888;">🔥 Top 3 Más Leídos</h4>
-                <ul style="list-style: none; padding: 0; margin: 0;">
+            <div class="card" style="margin-bottom: 0; flex-grow: 1; padding: 20px;">
+                <h4 style="margin-top: 0; font-size: 0.95rem; color: var(--text-primary); font-family: var(--font-head); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-fire" style="color: #f59e0b;"></i> Top 3 Más Leídos
+                </h4>
+                <ul style="list-style: none; padding: 0; margin: 12px 0 0 0;">
                     {% for slug, count in top_posts %}
-                    <li style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333; font-size: 0.9rem;">
-                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="{{ slug }}">{{ slug }}</span>
-                        <strong style="color: var(--success, #10b981);">{{ count }}</strong>
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); font-size: 0.9rem;">
+                        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; color: var(--text-secondary);" title="{{ slug }}"><i class="fa-regular fa-file-lines" style="margin-right: 6px; font-size: 0.8rem; color: var(--text-muted);"></i>{{ slug }}</span>
+                        <strong style="color: var(--accent-primary); font-family: var(--font-head);">{{ count }}</strong>
                     </li>
                     {% else %}
-                        <li style="color: #666; font-size: 0.8rem; padding: 10px 0;">Sin datos aún.</li>
+                        <li style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0; text-align: center; font-style: italic;">Sin datos aún.</li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
     </div>
     
-    <div style="margin: 20px 0; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between;">
-        <span>Sistema de Comentarios: 
-            <strong style="color: {{ '#4ade80' if comments_on else '#f87171' }};">{{ 'ENCENDIDO' if comments_on else 'APAGADO' }}</strong>
+    <!-- Sistema de comentarios ON/OFF -->
+    <div style="margin: 25px 0; padding: 20px; background: var(--bg-surface); backdrop-filter: blur(12px); border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; box-shadow: var(--card-shadow);">
+        <span style="display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.95rem;">
+            <i class="fa-regular fa-message" style="color: var(--accent-primary);"></i> Sistema de Comentarios: 
+            <span class="badge {{ 'badge-success' if comments_on else 'badge-warning' }}" style="padding: 4px 10px;">
+                {{ 'ENCENDIDO' if comments_on else 'APAGADO' }}
+            </span>
         </span>
-        <a href="{{ url_for('toggle_comments') }}" 
-            style="background: {{ '#d32f2f' if comments_on else '#2e7d32' }}; 
-            color: white; padding: 6px 15px; border-radius: 5px; text-decoration: none; font-size: 0.85rem;">
-            {{ 'Apagar' if comments_on else 'Encender' }}
+        <a href="{{ url_for('toggle_comments') }}" class="btn {{ 'btn-danger' if comments_on else '' }}" style="font-size: 0.85rem; padding: 8px 16px;">
+            <i class="fa-solid {{ 'fa-toggle-off' if comments_on else 'fa-toggle-on' }}"></i> {{ 'Apagar' if comments_on else 'Encender' }}
         </a>
     </div>
 
-    <h3 style="margin-top: 40px; border-bottom: 2px solid var(--primary); padding-bottom: 10px; display: inline-block;">Gestión de Artículos</h3>
-    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--card-bg); border-radius: 8px; overflow: hidden;">
+    <!-- Gestión de Artículos -->
+    <h3 style="margin-top: 40px; margin-bottom: 20px; font-family: var(--font-head); font-weight: 800; font-size: 1.4rem; color: var(--text-primary); border-left: 3px solid var(--accent-primary); padding-left: 12px;">Gestión de Artículos</h3>
+    <table style="margin-bottom: 50px;">
         <thead>
-            <tr style="border-bottom: 1px solid var(--gray); text-align: left; background: #1f1f1f;">
-                <th style="padding: 15px; color: #888;">Título</th>
-                <th style="padding: 15px; color: #888;">Estado</th>
-                <th style="padding: 15px; color: #888;">Fecha</th>
-                <th style="padding: 15px; color: #888;">Acciones</th>
+            <tr>
+                <th>Título</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for post in posts %}
-            <tr style="border-bottom: 1px solid var(--gray);">
-                <td style="padding: 15px;"><strong>{{ post.title }}</strong></td>
-                <td style="padding: 15px;">
-                        {% if post.slug.startswith('draft_') %}
-                            <span style="background: #ffeaa7; color: #d35400; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Borrador</span>
-                        {% else %}
-                            <span style="background: #064e3b; color: #4ade80; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">Público</span>
-                        {% endif %}
+            <tr>
+                <td><strong style="color: var(--text-primary); font-size: 0.95rem;">{{ post.title }}</strong></td>
+                <td>
+                    {% if post.slug.startswith('draft_') %}
+                        <span class="badge badge-warning" style="text-transform: uppercase; font-size: 0.7rem;"><i class="fa-solid fa-pen-ruler"></i> Borrador</span>
+                    {% else %}
+                        <span class="badge badge-success" style="text-transform: uppercase; font-size: 0.7rem;"><i class="fa-solid fa-circle-check"></i> Público</span>
+                    {% endif %}
                 </td>
-                <td style="padding: 15px; color: #666; font-size: 0.9rem;">{{ post.date }}</td>
-                <td style="padding: 15px; display: flex; gap: 15px;">
-                    <a href="{{ url_for('edit_post', slug=post.slug) }}" style="color: var(--primary); text-decoration: none; font-weight: 500;">Editar</a>
+                <td style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-regular fa-calendar" style="margin-right: 6px;"></i>{{ post.date }}</td>
+                <td style="display: flex; gap: 15px; border-bottom: none;">
+                    <a href="{{ url_for('edit_post', slug=post.slug) }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-pen-to-square"></i> Editar</a>
                     <form action="{{ url_for('delete_post', slug=post.slug) }}" method="POST" onsubmit="return confirm('¿Eliminar este post permanentemente?')">
-                        <button type="submit" style="background: none; color: #ff4444; border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: 1rem; opacity: 0.8;">Eliminar</button>
+                        <button type="submit" style="background: none; color: var(--danger); border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-regular fa-trash-can"></i> Eliminar</button>
                     </form>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" style="padding: 40px; text-align: center; color: #666;">
-                    No hay posts todavía. <a href="{{ url_for('edit_post') }}" style="color: var(--primary);">¡Crea el primero!</a>
+                <td colspan="4" style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">
+                    No hay posts todavía. <a href="{{ url_for('edit_post') }}" style="color: var(--accent-primary); font-weight: 600;">¡Crea el primero!</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+<style>
+@media (max-width: 800px) {
+    .admin-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
 {% endblock %}

@@ -1,20 +1,26 @@
 {% extends "base.html" %}
-
-{% block head %}
-    <meta charset="UTF-8">
-    <title>Login - NeoCMS</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 100px; background: #f4f4f4; }
-        form { background: black; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input { display: block; margin-bottom: 1rem; padding: 10px; width: 200px; }
-        button { width: 100%; padding: 10px; background: #333; color: white; border: none; cursor: pointer; }
-    </style>
-{% endblock %}
+{% block title %}Iniciar Sesión | NeoSite Blog{% endblock %}
 
 {% block content %}
-    <form method="POST">
-        <h2>Login en NeoCMS</h2>
-        <input type="password" name="password" placeholder="Contraseña" required>
-        <button type="submit">Entrar</button>
-    </form>
+<div style="display: flex; justify-content: center; align-items: center; min-height: 60vh; padding: 20px 0;">
+    <div style="background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px solid var(--border-color); padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: var(--card-shadow); text-align: center; position: relative; overflow: hidden;">
+        <!-- Resplandor decorativo de fondo -->
+        <div style="position: absolute; width: 150px; height: 150px; background: rgba(16, 185, 129, 0.15); filter: blur(50px); top: -50px; left: 50%; transform: translateX(-50%); pointer-events: none; border-radius: 50%;"></div>
+        
+        <div style="font-size: 3rem; color: var(--accent-primary); margin-bottom: 20px; display: inline-block;">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        
+        <h2 style="margin: 0 0 10px 0; font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; color: var(--text-primary);">Panel de Administración</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px;">Introduce la contraseña para acceder al gestor.</p>
+        
+        <form method="POST">
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label for="password" style="margin-top: 0;">Contraseña de acceso</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required autofocus style="text-align: center; letter-spacing: 2px;">
+            </div>
+            <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 14px;"><i class="fa-solid fa-right-to-bracket"></i> Acceder</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

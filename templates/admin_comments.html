@@ -1,56 +1,63 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Moderación de Comentarios</title>
-    <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border: 1px solid #333; text-align: left; }
-        .status-pending { color: #ffca28; }
-        .status-approved { color: #4caf50; }
-        .btn { padding: 5px 10px; border-radius: 4px; text-decoration: none; color: white; }
-        .btn-approve { background: #2e7d32; }
-    </style>
-</head>
-<body>
-    <h1>Moderación de Comentarios</h1>
-    <a href="{{ url_for('admin_list') }}">Volver al panel</a>
+{% extends "base.html" %}
+{% block title %}Moderación de Comentarios | NeoSite Blog{% endblock %}
+
+{% block head %}
+    <!-- style.css ya se incluye en base.html -->
+{% endblock %}
+
+{% block content %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; margin-bottom: 30px; border-bottom: 1px solid var(--border-color);">
+        <h2 style="margin: 0; font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; color: var(--text-primary);">
+            <i class="fa-solid fa-comments" style="color: var(--accent-primary); margin-right: 8px;"></i>Moderación de Comentarios
+        </h2>
+        <a href="{{ url_for('admin_list') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver al panel</a>
+    </div>
     
-    <table>
+    <table style="margin-bottom: 50px;">
         <thead>
             <tr>
                 <th>Post</th>
                 <th>Autor</th>
                 <th>Comentario</th>
                 <th>Estado</th>
-                <th>Acción</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for c in comments %}
             <tr>
-                <td>{{ c.slug }}</td>
-                <td>{{ c.author }}</td>
-                <td>{{ c.text }}</td>
-                <td class="{{ 'status-approved' if c.approved else 'status-pending' }}">
-                    {{ 'Aprobado' if c.approved else 'Pendiente' }}
-                </td>
+                <td><code style="background: rgba(255,255,255,0.03); color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; font-family: monospace;">{{ c.slug }}</code></td>
+                <td><strong style="color: var(--accent-primary);">@{{ c.author }}</strong></td>
+                <td style="color: var(--text-secondary); max-width: 300px; word-break: break-word;">{{ c.text }}</td>
                 <td>
+                    {% if c.approved %}
+                        <span class="badge badge-success" style="text-transform: uppercase; font-size: 0.7rem;"><i class="fa-solid fa-circle-check"></i> Aprobado</span>
+                    {% else %}
+                        <span class="badge badge-warning" style="text-transform: uppercase; font-size: 0.7rem; color: #f59e0b; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);"><i class="fa-solid fa-clock"></i> Pendiente</span>
+                    {% endif %}
+                </td>
+                <td style="display: flex; gap: 10px; align-items: center; border-bottom: none;">
                     {% if not c.approved %}
-                        <a href="{{ url_for('approve_comment', slug=c.slug, comment_id=c.id) }}" 
-                        class="btn btn-approve">Aprobar</a>
+                        <a href="{{ url_for('approve_comment', slug=c.slug, comment_id=c.id) }}" class="btn" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;">
+                            <i class="fa-solid fa-check"></i> Aprobar
+                        </a>
                     {% endif %}
     
                     <a href="{{ url_for('delete_comment', slug=c.slug, comment_id=c.id) }}" 
-                        class="btn btn-delete" 
-                        style="background: #c62828; margin-left: 10px;"
+                        class="btn btn-danger" 
+                        style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;"
                         onclick="return confirm('¿Estás seguro de que quieres eliminar este comentario?')">
-                        Eliminar
+                        <i class="fa-regular fa-trash-can"></i> Eliminar
                     </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">
+                    No hay comentarios para moderar.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-</body>
-</html>
+{% endblock %}

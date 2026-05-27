@@ -1,25 +1,26 @@
 {% extends "base.html" %}
+{% block title %}Editor Pro | NeoSite Blog{% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>Editor Pro - NeoCMS</title>
+    <!-- style.css ya se incluye en base.html -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Contenedor principal que limita la altura */
         .editor-workspace {
             display: flex;
             flex-direction: column;
-            height: 85vh; /* Ocupa el 85% de la altura de la pantalla */
-            margin-top: 10px;
+            height: 80vh;
+            margin-top: 15px;
+            margin-bottom: 30px;
         }
 
         /* Barra de Herramientas */
         .toolbar {
-            flex-shrink: 0; /* No dejes que esto se achique */
-            background: #1f1f1f;
-            padding: 10px 15px;
-            border-radius: 8px 8px 0 0;
-            border: 1px solid #333;
+            flex-shrink: 0;
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            border: 1px solid var(--border-color);
             border-bottom: none;
             display: flex;
             gap: 15px;
@@ -28,81 +29,85 @@
         }
 
         .meta-input {
-            background: #111;
-            border: 1px solid #444;
-            color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            background: rgba(10, 15, 30, 0.8) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            font-size: 0.85rem !important;
+            margin-bottom: 0 !important;
         }
 
         .title-input {
             flex-grow: 1;
-            font-size: 1.2rem;
-            font-weight: bold;
-            background: transparent;
-            border: none;
-            color: white;
-            border-bottom: 1px solid #444;
+            font-size: 1.3rem !important;
+            font-weight: 800 !important;
+            font-family: var(--font-head) !important;
+            background: transparent !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: 0 !important;
+            margin-bottom: 0 !important;
+            padding: 8px 0 !important;
         }
-        .title-input:focus { outline: none; border-color: #0070f3; }
+        .title-input:focus { 
+            outline: none !important; 
+            border-bottom-color: var(--accent-primary) !important;
+            box-shadow: none !important; 
+        }
 
         /* GRID PRINCIPAL */
         .editor-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            flex-grow: 1; /* Ocupa todo el espacio restante */
-            min-height: 0; /* <--- TRUCO IMPORTANTE: Permite que el scroll funcione */
-            border: 1px solid #333;
-            border-radius: 0 0 8px 8px;
-            background: #161616;
-            overflow: hidden; /* Corta lo que sobre */
+            flex-grow: 1;
+            min-height: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 12px 12px;
+            background: rgba(8, 12, 20, 0.4);
+            overflow: hidden;
         }
 
         /* Área de escritura y preview */
         textarea#markdown-input, #preview {
             width: 100%;
-            height: 100%; /* Altura total del padre */
+            height: 100%;
             padding: 20px;
             border: none;
-            overflow-y: auto; /* Scroll independiente */
+            overflow-y: auto;
             resize: none;
             box-sizing: border-box;
         }
 
         textarea#markdown-input {
-            background: #0a0a0a;
-            color: #e0e0e0;
+            background: rgba(5, 8, 15, 0.95);
+            color: var(--text-primary);
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 1rem;
             line-height: 1.6;
-            border-right: 1px solid #333;
+            border-right: 1px solid var(--border-color);
+            outline: none;
         }
 
         #preview {
-            background: #111;
-            color: #ccc;
+            background: rgba(10, 15, 30, 0.4);
+            color: var(--text-secondary);
         }
         
-        /* Imágenes dentro del preview */
-        #preview img { max-width: 100%; height: auto; border-radius: 5px; }
+        #preview img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: var(--card-shadow); }
 
-        /* Botones */
-        .btn-action {
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 4px;
-            border: none;
-            font-size: 0.9rem;
-            font-weight: bold;
+        .editor-meta-strip {
+            background: rgba(15, 22, 42, 0.4);
+            padding: 10px 20px;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
             display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
             align-items: center;
-            gap: 5px;
+            flex-wrap: wrap;
         }
-        .btn-save { background: #0070f3; color: white; }
-        .btn-save:hover { background: #005bb5; }
-        .btn-upload { background: #333; color: white; border: 1px solid #555; }
-        .btn-upload:hover { background: #444; }
         
         @media (max-width: 768px) {
             .editor-workspace { height: auto; min-height: 100vh; }
@@ -114,8 +119,10 @@
 
 {% block content %}
     
-    <div style="margin-bottom: 10px;">
-        <a href="{{ url_for('admin_list') }}" style="color: #888; text-decoration: none;">← Volver al Admin</a>
+    <div style="margin-bottom: 15px; margin-top: 15px;">
+        <a href="{{ url_for('admin_list') }}" style="color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-left-long"></i> Volver al Admin
+        </a>
     </div>
 
     <form method="POST" class="editor-workspace">
@@ -123,33 +130,33 @@
         <div class="toolbar">
             <input type="text" name="title" value="{{ post.title }}" placeholder="Título del Post..." required class="title-input">
             
-            <select name="status" class="meta-input" style="color: {{ '#4ade80' if post.status == 'published' else '#fbbf24' }}">
+            <select name="status" class="meta-input" style="font-weight: 700; width: 130px;">
                 <option value="published" {% if post.status == 'published' %}selected{% endif %}>🚀 Público</option>
                 <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>📝 Borrador</option>
             </select>
 
-            <button type="button" class="btn-action btn-upload" onclick="document.getElementById('file-uploader').click()">
-                📷 Media
+            <button type="button" class="btn btn-secondary" style="padding: 8px 16px; border-radius: 8px;" onclick="document.getElementById('file-uploader').click()">
+                <i class="fa-regular fa-image" style="color: var(--accent-primary);"></i> Media
             </button>
-            <button type="submit" class="btn-action btn-save">
-                💾 Guardar
+            <button type="submit" class="btn" style="padding: 8px 20px; border-radius: 8px;">
+                <i class="fa-regular fa-floppy-disk"></i> Guardar
             </button>
         </div>
         
-        <div style="background: #1a1a1a; padding: 5px 15px; border-left: 1px solid #333; border-right: 1px solid #333; display: flex; gap: 10px; font-size: 0.8rem;">
-            <input type="date" name="date" value="{{ post.date }}" class="meta-input">
-            <input type="text" name="category" value="{{ post.category }}" placeholder="Categoría" class="meta-input">
+        <div class="editor-meta-strip">
+            <input type="date" name="date" value="{{ post.date }}" class="meta-input" style="width: 140px;">
+            <input type="text" name="category" value="{{ post.category }}" placeholder="Categoría" class="meta-input" style="width: 150px;">
             <input type="text" name="tags" value="{{ post.tags }}" placeholder="Tags (separados por coma)" class="meta-input" style="flex-grow: 1;">
-            <input type="text" name="description" value="{{ post.description }}" placeholder="Descripción SEO..." class="meta-input" style="flex-grow: 1;">
+            <input type="text" name="description" value="{{ post.description }}" placeholder="Descripción SEO..." class="meta-input" style="flex-grow: 2;">
         </div>
 
         <div class="editor-grid">
-            <textarea name="content" id="markdown-input" placeholder="Escribe aquí...">{{ post.content }}</textarea>
+            <textarea name="content" id="markdown-input" placeholder="Escribe tu artículo en formato Markdown aquí...">{{ post.content }}</textarea>
             <div id="preview" class="prose"></div>
         </div>
 
         <input type="file" id="file-uploader" style="display: none;">
-        <span id="upload-status" style="position: fixed; bottom: 10px; right: 10px; background: #333; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; display: none;"></span>
+        <span id="upload-status" style="position: fixed; bottom: 20px; right: 20px; background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; display: none; box-shadow: var(--card-shadow); z-index: 1000;"></span>
 
     </form>  
 
@@ -157,22 +164,12 @@
         const input = document.getElementById('markdown-input');
         const preview = document.getElementById('preview');
 
-        // Renderizado
         function updatePreview() {
             preview.innerHTML = marked.parse(input.value);
         }
         input.addEventListener('input', updatePreview);
         updatePreview();
 
-        // Scroll Sincronizado (Opcional: Si quieres que al bajar uno baje el otro)
-        /*
-        input.addEventListener('scroll', () => {
-             const percent = input.scrollTop / (input.scrollHeight - input.clientHeight);
-             preview.scrollTop = percent * (preview.scrollHeight - preview.clientHeight);
-        });
-        */
-
-        // Lógica de Upload
         const fileUploader = document.getElementById('file-uploader');
         const status = document.getElementById('upload-status');
 
@@ -184,7 +181,7 @@
             formData.append('file', file);
             
             status.style.display = 'block';
-            status.innerText = "Subiendo...";
+            status.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--accent-primary); margin-right: 6px;"></i> Subiendo...';
 
             try {
                 const response = await fetch('/admin/upload', { method: 'POST', body: formData });
@@ -195,18 +192,22 @@
                     if (file.type.includes('audio')) code = `<audio controls src="${data.url}"></audio>`;
                     if (file.type.includes('video')) code = `<video controls width="100%" src="${data.url}"></video>`;
 
-                    // Insertar en cursor
                     const startPos = input.selectionStart;
                     const endPos = input.selectionEnd;
                     input.value = input.value.substring(0, startPos) + "\n" + code + "\n" + input.value.substring(endPos);
                     
-                    status.innerText = "✅ Listo";
+                    status.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 6px;"></i> Subido con éxito';
                     setTimeout(() => status.style.display = 'none', 2000);
                     updatePreview();
                 } else {
-                    status.innerText = "Error";
+                    status.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger); margin-right: 6px;"></i> Error al subir';
+                    setTimeout(() => status.style.display = 'none', 3000);
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error(err);
+                status.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger); margin-right: 6px;"></i> Error de red';
+                setTimeout(() => status.style.display = 'none', 3000);
+            }
         });
     </script>
 {% endblock %}

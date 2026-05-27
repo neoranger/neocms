@@ -13,3 +13,14 @@ Timestamp,User_ID,Action,Detail,OS,Location,IP
 2026-01-30 16:42:18,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
 2026-01-30 16:42:24,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
 2026-01-30 16:42:48,91ab71bd,VIEW,/post/neosite-podcast-9-las-fiestas-de-ste-lado-del-hemisferio,Windows,"Buenos Aires, Argentina",98.98.187.146
+2026-05-27 13:11:40,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:12:03,fcd56f9e,VIEW,/post/ejemplo-de-post,Linux,Desconocido,172.18.0.1
+2026-05-27 13:12:16,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:12:18,fcd56f9e,VIEW,/post/ejemplo-de-post,Linux,Desconocido,172.18.0.1
+2026-05-27 13:12:25,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:15:58,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:16:42,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:16:57,fcd56f9e,VIEW,home,Linux,Desconocido,172.18.0.1
+2026-05-27 13:17:04,fcd56f9e,VIEW,/rss.xml,Linux,Desconocido,172.18.0.1
+2026-05-27 13:17:26,fcd56f9e,VIEW,/login,Linux,Desconocido,172.18.0.1
+2026-05-27 13:19:07,fcd56f9e,VIEW,/login/2fa,Linux,Desconocido,172.18.0.1
