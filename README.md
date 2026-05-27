@@ -90,7 +90,7 @@ neocms/
 ├── Dockerfile            # Definición de imagen (compartida)
 ├── docker-compose.yml    # Orquestación de servicios
 ├── requirements.txt      # Dependencias Python
-└── stats.json            # Base de datos de visitas (Persistente)
+└── stats.csv             # Base de datos de visitas (Persistente)
 ```
 
 ### 🤖 Uso del Bot de Telegram
