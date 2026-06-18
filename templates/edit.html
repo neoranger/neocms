@@ -2,21 +2,20 @@
 {% block title %}Editor Pro | NeoSite Blog{% endblock %}
 
 {% block head %}
-    <!-- style.css ya se incluye en base.html -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- EasyMDE CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    
     <style>
         .editor-workspace {
             display: flex;
             flex-direction: column;
-            height: 82vh;
             margin-top: 15px;
             margin-bottom: 30px;
-            gap: 0;
         }
 
-        /* Barra de Herramientas */
-        .toolbar {
-            flex-shrink: 0;
+        /* Barra de Herramientas de Metadatos */
+        .meta-toolbar {
             background: var(--bg-surface);
             backdrop-filter: blur(12px);
             padding: 15px 20px;
@@ -58,103 +57,6 @@
             box-shadow: none !important; 
         }
 
-        /* Controles de Modo de Vista */
-        .view-controls {
-            display: flex;
-            background: rgba(10, 15, 30, 0.6);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 2px;
-            gap: 2px;
-        }
-
-        .btn-view-mode {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-view-mode:hover {
-            color: var(--text-primary);
-        }
-
-        .btn-view-mode.active {
-            color: #fff !important;
-            background: var(--accent-primary) !important;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-        }
-
-        /* GRID PRINCIPAL */
-        .editor-grid {
-            display: grid;
-            flex-grow: 1;
-            min-height: 0;
-            border: 1px solid var(--border-color);
-            border-radius: 0 0 12px 12px;
-            background: rgba(8, 12, 20, 0.4);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        /* Clases de modos de vista */
-        .editor-grid.mode-split {
-            grid-template-columns: 1fr 1fr;
-        }
-        .editor-grid.mode-write {
-            grid-template-columns: 1fr;
-        }
-        .editor-grid.mode-write #preview {
-            display: none;
-        }
-        .editor-grid.mode-preview {
-            grid-template-columns: 1fr;
-        }
-        .editor-grid.mode-preview textarea#markdown-input {
-            display: none;
-        }
-
-        /* Área de escritura y preview */
-        textarea#markdown-input, #preview {
-            width: 100%;
-            height: 100%;
-            padding: 24px;
-            border: none;
-            overflow-y: auto;
-            resize: none;
-            box-sizing: border-box;
-        }
-
-        textarea#markdown-input {
-            background: rgba(5, 8, 15, 0.95);
-            color: var(--text-primary);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 1.05rem;
-            line-height: 1.6;
-            border-right: 1px solid var(--border-color);
-            outline: none;
-            transition: border-color 0.2s ease;
-        }
-
-        textarea#markdown-input:focus {
-            border-right-color: var(--accent-primary);
-        }
-
-        #preview {
-            background: rgba(10, 15, 30, 0.2);
-            color: var(--text-secondary);
-        }
-        
-        #preview img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: var(--card-shadow); }
-
         .editor-meta-strip {
             background: rgba(15, 22, 42, 0.4);
             padding: 10px 20px;
@@ -166,11 +68,85 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        
-        @media (max-width: 768px) {
-            .editor-workspace { height: auto; min-height: 100vh; }
-            .editor-grid.mode-split { grid-template-columns: 1fr; }
-            textarea#markdown-input, #preview { height: 400px; }
+
+        /* Personalización de EasyMDE para el Tema Oscuro */
+        .editor-toolbar {
+            background: var(--bg-surface) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 0 !important;
+            border-left: 1px solid var(--border-color) !important;
+            border-right: 1px solid var(--border-color) !important;
+            opacity: 1 !important;
+        }
+
+        .editor-toolbar button {
+            color: var(--text-secondary) !important;
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .editor-toolbar button:hover, 
+        .editor-toolbar button.active {
+            color: var(--text-primary) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .editor-toolbar i {
+            color: inherit !important;
+        }
+
+        .editor-toolbar button.active {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+            color: var(--accent-primary) !important;
+        }
+
+        .CodeMirror {
+            background: rgba(5, 8, 15, 0.95) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 0 0 12px 12px !important;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 1.05rem !important;
+            line-height: 1.6 !important;
+            height: 55vh !important;
+        }
+
+        .CodeMirror-cursor {
+            border-left: 2px solid var(--accent-primary) !important;
+        }
+
+        .editor-preview-active, 
+        .editor-preview-side {
+            background: rgba(10, 15, 30, 0.98) !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .editor-preview-side {
+            border-left: 1px solid var(--border-color) !important;
+        }
+
+        .editor-preview img, 
+        .editor-preview-side img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .editor-statusbar {
+            color: var(--text-muted) !important;
+            padding: 8px 12px !important;
+            font-size: 0.8rem !important;
+        }
+
+        .editor-statusbar .words::before {
+            content: " palabras: ";
+        }
+
+        .editor-statusbar .lines::before {
+            content: " líneas: ";
         }
     </style>
 {% endblock %}
@@ -183,9 +159,10 @@
         </a>
     </div>
 
-    <form method="POST" class="editor-workspace">
+    <form method="POST" class="editor-workspace" id="editor-form">
         
-        <div class="toolbar">
+        <!-- Barra de Metadatos superior -->
+        <div class="meta-toolbar">
             <input type="text" name="title" value="{{ post.title }}" placeholder="Título del Post..." required class="title-input">
             
             <select name="status" class="meta-input" style="font-weight: 700; width: 130px;">
@@ -193,22 +170,10 @@
                 <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>📝 Borrador</option>
             </select>
 
-            <!-- Modo de Vista -->
-            <div class="view-controls">
-                <button type="button" class="btn-view-mode active" id="btn-split" onclick="changeViewMode('split')" title="Pantalla Dividida">
-                    <i class="fa-solid fa-columns"></i> <span class="hide-mobile">Dividido</span>
-                </button>
-                <button type="button" class="btn-view-mode" id="btn-write" onclick="changeViewMode('write')" title="Solo Editor">
-                    <i class="fa-solid fa-pen"></i> <span class="hide-mobile">Escribir</span>
-                </button>
-                <button type="button" class="btn-view-mode" id="btn-preview" onclick="changeViewMode('preview')" title="Solo Vista Previa">
-                    <i class="fa-solid fa-eye"></i> <span class="hide-mobile">Vista Previa</span>
-                </button>
-            </div>
-
             <button type="button" class="btn btn-secondary" style="padding: 8px 16px; border-radius: 8px;" onclick="document.getElementById('file-uploader').click()">
                 <i class="fa-regular fa-image" style="color: var(--accent-primary);"></i> Media
             </button>
+            
             <button type="submit" class="btn" style="padding: 8px 20px; border-radius: 8px;">
                 <i class="fa-regular fa-floppy-disk"></i> Guardar
             </button>
@@ -218,17 +183,12 @@
             <input type="date" name="date" value="{{ post.date }}" class="meta-input" style="width: 140px;">
             <input type="text" name="category" value="{{ post.category }}" placeholder="Categoría" class="meta-input" style="width: 150px;">
             <input type="text" name="tags" value="{{ post.tags }}" placeholder="Tags (separados por coma)" class="meta-input" style="flex-grow: 1;">
-            
-            <!-- Contadores de palabras y caracteres -->
-            <div style="display: flex; gap: 15px; margin-left: auto; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; padding: 0 10px;">
-                <span><i class="fa-solid fa-font" style="margin-right: 4px; color: var(--accent-primary);"></i><span id="char-count">0</span> letras</span>
-                <span><i class="fa-solid fa-lines-leaning" style="margin-right: 4px; color: var(--accent-primary);"></i><span id="word-count">0</span> palabras</span>
-            </div>
+            <input type="text" name="description" value="{{ post.description }}" placeholder="Descripción SEO..." class="meta-input" style="flex-grow: 2;">
         </div>
 
-        <div class="editor-grid mode-split" id="editor-grid">
-            <textarea name="content" id="markdown-input" placeholder="Escribe tu artículo en formato Markdown aquí...">{{ post.content }}</textarea>
-            <div id="preview" class="prose"></div>
+        <!-- Textarea que EasyMDE convertirá -->
+        <div style="position: relative;">
+            <textarea name="content" id="markdown-input" placeholder="Escribe tu artículo aquí...">{{ post.content }}</textarea>
         </div>
 
         <input type="file" id="file-uploader" style="display: none;">
@@ -237,48 +197,28 @@
     </form>  
 
     <script>
-        const input = document.getElementById('markdown-input');
-        const preview = document.getElementById('preview');
-        const grid = document.getElementById('editor-grid');
+        // Inicializar EasyMDE
+        const easyMDE = new EasyMDE({
+            element: document.getElementById('markdown-input'),
+            autoDownloadFontAwesome: false,
+            spellChecker: false,
+            placeholder: "Escribe tu artículo aquí en formato Markdown...",
+            status: ["lines", "words", "cursor"],
+            tabSize: 4,
+            renderingConfig: {
+                singleLineBreaks: false,
+                codeSyntaxHighlighting: true
+            },
+            toolbar: [
+                "bold", "italic", "strikethrough", "heading", "|",
+                "quote", "code", "unordered-list", "ordered-list", "|",
+                "link", "image", "table", "horizontal-rule", "|",
+                "preview", "side-by-side", "fullscreen", "|",
+                "guide"
+            ]
+        });
 
-        // Modo de vista interactivo
-        function changeViewMode(mode) {
-            // Remover clases
-            grid.classList.remove('mode-split', 'mode-write', 'mode-preview');
-            document.querySelectorAll('.btn-view-mode').forEach(btn => btn.classList.remove('active'));
-
-            // Añadir clase correspondiente
-            grid.classList.add(`mode-${mode}`);
-            document.getElementById(`btn-${mode}`).classList.add('active');
-            
-            // Guardar preferencia local
-            localStorage.setItem('editor_view_mode', mode);
-        }
-
-        // Cargar preferencia del localStorage
-        const savedMode = localStorage.getItem('editor_view_mode');
-        if (savedMode) {
-            changeViewMode(savedMode);
-        }
-
-        // Contadores en tiempo real
-        function updateCounters() {
-            const text = input.value || '';
-            const charCount = text.length;
-            const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-            const wordCount = words.length;
-
-            document.getElementById('char-count').textContent = charCount;
-            document.getElementById('word-count').textContent = wordCount;
-        }
-
-        function updatePreview() {
-            preview.innerHTML = marked.parse(input.value);
-            updateCounters();
-        }
-        input.addEventListener('input', updatePreview);
-        updatePreview();
-
+        // Manejador del subidor de archivos multimedia
         const fileUploader = document.getElementById('file-uploader');
         const status = document.getElementById('upload-status');
 
@@ -301,13 +241,12 @@
                     if (file.type.includes('audio')) code = `<audio controls src="${data.url}"></audio>`;
                     if (file.type.includes('video')) code = `<video controls width="100%" src="${data.url}"></video>`;
 
-                    const startPos = input.selectionStart;
-                    const endPos = input.selectionEnd;
-                    input.value = input.value.substring(0, startPos) + "\n" + code + "\n" + input.value.substring(endPos);
+                    // Insertar el elemento multimedia en la posición actual del cursor de EasyMDE
+                    const pos = easyMDE.codemirror.getCursor();
+                    easyMDE.codemirror.replaceRange("\n" + code + "\n", pos);
                     
                     status.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 6px;"></i> Subido con éxito';
                     setTimeout(() => status.style.display = 'none', 2000);
-                    updatePreview();
                 } else {
                     status.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger); margin-right: 6px;"></i> Error al subir';
                     setTimeout(() => status.style.display = 'none', 3000);
