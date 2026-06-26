@@ -22,6 +22,7 @@ Thumbs.db
 
 # Docker
 .dockerignore
+docker-compose.yml
 
 # IDEs
 .vscode/
