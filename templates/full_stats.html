@@ -88,7 +88,7 @@
         </div>
 
         <div style="display: flex; flex-direction: column;">
-            <h2 class="section-title" style="margin-top: 0;">🌍 Ubicación Geográfica</h2>
+            <h2 class="section-title" style="margin-top: 0;">🌍 Top 10 Ubicación Geográfica</h2>
             <table>
                 <thead>
                     <tr>
@@ -100,7 +100,12 @@
                     {% for loc, count in location_stats %}
                     <tr>
                         <td>{{ loc }}</td>
-                        <td><strong style="color: var(--text-primary);">{{ count }}</strong></td>
+                        <td>
+                            <div class="progress-bg">
+                                <div class="progress-fill" style="width: {{ (count / total * 100)|round }}%;"></div>
+                            </div>
+                            <strong style="color: var(--text-primary);">{{ count }}</strong>
+                        </td>
                     </tr>
                     {% else %}
                     <tr><td colspan="2" style="text-align:center; color: var(--text-muted);">Sin datos</td></tr>

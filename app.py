@@ -592,8 +592,8 @@ def full_stats():
     
     # NUEVO: Pasar OS y Location al template
     # (Tendrás que actualizar full_stats.html si quieres ver esto)
-    top_os = sorted(stats_data['os'].items(), key=lambda x: x[1], reverse=True)
-    top_loc = sorted(stats_data['location'].items(), key=lambda x: x[1], reverse=True)
+    top_os = sorted(stats_data['os'].items(), key=lambda x: x[1], reverse=True)[:5]
+    top_loc = sorted(stats_data['location'].items(), key=lambda x: x[1], reverse=True)[:10]
 
     return render_template('full_stats.html', 
                            total=stats_data['total'],
