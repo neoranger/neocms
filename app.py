@@ -68,7 +68,7 @@ def get_location_by_ip(ip):
     return "Desconocido"
 
 def analyze_csv_stats():
-    """Lee el CSV y reconstruye los diccionarios para el Admin"""
+    """Lee el CSV y reconstruye los diccionarios para el Admin deduplicando y filtrando bots"""
     stats = {
         'daily': Counter(),
         'posts': Counter(),
@@ -80,23 +80,50 @@ def analyze_csv_stats():
     if not os.path.exists(STATS_FILE):
         return stats
 
+    seen_visits = set()
+    ignored_paths = ['/login', '/login/2fa', '/logout', '/rss.xml', '/favicon.ico']
+
     try:
         with open(STATS_FILE, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
+                user_id = row['User_ID']
+                detail = row['Detail']
+                timestamp_str = row['Timestamp']
+                
+                # 1. Ignorar páginas técnicas/administrativas
+                if detail in ignored_paths or detail.startswith('/admin'):
+                    continue
+                
+                # 2. Heurística de deduplicación (Sesión de 30 minutos)
+                try:
+                    dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                    rounded_time = dt.replace(minute=(dt.minute // 30) * 30, second=0, microsecond=0)
+                    visit_key = (user_id, detail, rounded_time)
+                except ValueError:
+                    visit_key = (user_id, detail, timestamp_str[:13]) # Fallback por hora
+                
+                if visit_key in seen_visits:
+                    continue
+                    
+                seen_visits.add(visit_key)
+
+                # Incrementar contadores
                 stats['total'] += 1
                 
                 # Fecha (YYYY-MM-DD) extraída del timestamp
-                date_only = row['Timestamp'].split(' ')[0]
+                date_only = timestamp_str.split(' ')[0]
                 stats['daily'][date_only] += 1
                 
                 # Posts (slugs)
-                if row['Detail'] != 'home' and not row['Detail'].startswith('/'):
-                     stats['posts'][row['Detail']] += 1
-                elif row['Detail'].startswith('/post/'):
+                if detail != 'home' and not detail.startswith('/'):
+                     stats['posts'][detail] += 1
+                elif detail.startswith('/post/'):
                      # Limpiar "/post/slug" a "slug"
-                     slug = row['Detail'].replace('/post/', '')
+                     slug = detail.replace('/post/', '')
                      stats['posts'][slug] += 1
+                elif detail == 'home':
+                     stats['posts']['home'] += 1
 
                 # OS y Ubicación
                 stats['os'][row.get('OS', 'Otro')] += 1
@@ -133,7 +160,15 @@ def log_request_data(response):
     if request.cookies.get('is_admin'):
         return response
     
-    if request.path.startswith('/static') or request.path.startswith('/favicon') or request.path.startswith('/admin'):
+    # Filtrar bots y scrapers comunes
+    ua = request.user_agent.string.lower()
+    bot_keywords = ['bot', 'crawler', 'spider', 'wget', 'curl', 'http', 'scrax', 'headless', 'uptime', 'python-requests']
+    if any(keyword in ua for keyword in bot_keywords):
+        return response
+
+    # Filtrar rutas técnicas, administrativas y de login
+    ignored_paths = ['/login', '/login/2fa', '/logout', '/rss.xml', '/favicon.ico']
+    if request.path in ignored_paths or request.path.startswith('/static') or request.path.startswith('/admin'):
         return response
 
     if response.status_code != 200:
