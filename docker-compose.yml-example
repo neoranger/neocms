@@ -4,7 +4,7 @@ services:
     restart: always
     container_name: NeoCMS_web
     ports:
-      - "5000:5000"
+      - "5053:5000"
     env_file:
       - .env
     volumes:
@@ -42,7 +42,7 @@ services:
     # La API de comentarios la consume el navegador del visitante, por eso se
     # expone al host. Configura COMMENTS_API_URL con esta misma dirección.
     ports:
-      - "5001:5001"
+      - "5054:5001"
     env_file:
       - .env
     environment:
