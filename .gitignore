@@ -7,9 +7,17 @@ venv/
 ENV/
 .env
 
-# Base de datos y Estadísticas (Opcional)
-# Descomenta la siguiente línea si NO quieres subir tus visitas reales a GitHub
-# stats.json
+# Base de datos y Estadísticas (Datos de producción, NO versionar)
+stats.csv
+stats.lock
+stats.json
+
+# Contenido dinámico del Blog (Posts y Comentarios)
+content/
+comments_data/
+
+# Archivos subidos por los usuarios
+static/uploads/
 
 # Sistema
 .DS_Store
@@ -30,6 +38,5 @@ docker-compose.yml
 *.swp
 *.swo
 
-#Archivos locales
-stats.csv
+# Entorno y Secretos
 .totp_secret

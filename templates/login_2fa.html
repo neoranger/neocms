@@ -34,6 +34,7 @@
         {% endif %}
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div style="margin-bottom: 20px;">
                 <input type="text" name="code" placeholder="000000" maxlength="6" autofocus autocomplete="off" required 
                        style="text-align: center; font-size: 1.5rem; letter-spacing: 6px; font-weight: bold; font-family: monospace; padding: 12px;">

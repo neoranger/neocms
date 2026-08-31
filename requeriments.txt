@@ -9,10 +9,16 @@ Markdown==3.5.1
 python-dotenv==1.0.0
 
 requests
-flask
 flask-cors
-requests
 filelock
 pyotp
 qrcode
 pillow
+
+# Seguridad
+flask-limiter
+bleach
+flask-wtf
+
+# Servidor de producción
+gunicorn

@@ -105,9 +105,12 @@
                 {{ 'ENCENDIDO' if comments_on else 'APAGADO' }}
             </span>
         </span>
-        <a href="{{ url_for('toggle_comments') }}" class="btn {{ 'btn-danger' if comments_on else '' }}" style="font-size: 0.85rem; padding: 8px 16px;">
-            <i class="fa-solid {{ 'fa-toggle-off' if comments_on else 'fa-toggle-on' }}"></i> {{ 'Apagar' if comments_on else 'Encender' }}
-        </a>
+        <form action="{{ url_for('toggle_comments') }}" method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn {{ 'btn-danger' if comments_on else '' }}" style="font-size: 0.85rem; padding: 8px 16px; cursor:pointer; border:none;">
+                <i class="fa-solid {{ 'fa-toggle-off' if comments_on else 'fa-toggle-on' }}"></i> {{ 'Apagar' if comments_on else 'Encender' }}
+            </button>
+        </form>
     </div>
 
     <!-- Gestión de Artículos -->
@@ -136,6 +139,7 @@
                 <td style="display: flex; gap: 15px; border-bottom: none;">
                     <a href="{{ url_for('edit_post', slug=post.slug) }}" style="color: var(--accent-primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-pen-to-square"></i> Editar</a>
                     <form action="{{ url_for('delete_post', slug=post.slug) }}" method="POST" onsubmit="return confirm('¿Eliminar este post permanentemente?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" style="background: none; color: var(--danger); border: none; cursor: pointer; padding: 0; font-family: inherit; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-regular fa-trash-can"></i> Eliminar</button>
                     </form>
                 </td>

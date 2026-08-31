@@ -160,6 +160,7 @@
     </div>
 
     <form method="POST" class="editor-workspace" id="editor-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <!-- Barra de Metadatos superior -->
         <div class="meta-toolbar">
@@ -233,7 +234,12 @@
             status.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--accent-primary); margin-right: 6px;"></i> Subiendo...';
 
             try {
-                const response = await fetch('/admin/upload', { method: 'POST', body: formData });
+                const csrfToken = document.querySelector('#editor-form input[name="csrf_token"]').value;
+                const response = await fetch('/admin/upload', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
                 const data = await response.json();
 
                 if (response.ok) {

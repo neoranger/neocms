@@ -15,6 +15,7 @@
         <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px;">Introduce la contraseña para acceder al gestor.</p>
         
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div style="margin-bottom: 20px; text-align: left;">
                 <label for="password" style="margin-top: 0;">Contraseña de acceso</label>
                 <input type="password" id="password" name="password" placeholder="••••••••" required autofocus style="text-align: center; letter-spacing: 2px;">

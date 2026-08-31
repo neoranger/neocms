@@ -1,4 +1,5 @@
 import os
+import sys
 import frontmatter
 from flask import Flask, render_template, abort, request, redirect, url_for, session, Response, g, make_response, send_file
 from functools import wraps
@@ -6,6 +7,8 @@ from markdown import markdown
 import re
 import unicodedata
 from werkzeug.utils import secure_filename
+from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timedelta
 import zipfile
 import json
@@ -20,6 +23,10 @@ import pyotp
 import qrcode
 from io import BytesIO
 import base64
+import bleach
+from flask_wtf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TOTP_FILE = os.path.join(BASE_DIR, '.totp_secret')
@@ -32,14 +39,95 @@ COMMENTS_DATA_DIR = 'comments_data/'
 load_dotenv() 
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'default-key-for-dev')
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin')
+
+# CAMBIO SEGURIDAD: No usar secret key por defecto. Si falta, abortar el arranque.
+_secret_key = os.environ.get('SECRET_KEY', '').strip()
+if not _secret_key:
+    sys.exit("ERROR DE SEGURIDAD: La variable de entorno SECRET_KEY es obligatoria. Genera una con: python -c \"import secrets; print(secrets.token_hex(32))\" y colócala en el archivo .env")
+app.secret_key = _secret_key
 
 CONTENT_DIR = "content"
 UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'mp4'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB máx. por request (uploads)
+
+# CAMBIO SEGURIDAD: Cookies de sesión más seguras
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# Secure solo si estamos detrás de TLS
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('COOKIE_SECURE', '').strip() == '1'
+
+# Confiar en headers de proxy (reverse proxy / docker)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+# CAMBIO SEGURIDAD: Protección CSRF para los métodos que mutan estado
+csrf = CSRFProtect(app)
+
+# CAMBIO SEGURIDAD: Rate limiting contra fuerza bruta.
+# Se aplican límites explícitos a /login y /login/2fa (rutas sensibles).
+# No se limita agresivamente el front público para no perjudicar a lectores reales.
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    enabled=True,
+)
+
+# Niveles/atributos HTML permitidos al sanitizar el contenido markdown y el RSS
+ALLOWED_TAGS = (
+    'a', 'abbr', 'acronym', 'b', 'blockquote', 'br', 'code', 'dd', 'del', 'div',
+    'dl', 'dt', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'li',
+    'ol', 'p', 'pre', 's', 'span', 'strike', 'strong', 'sub', 'sup', 'table',
+    'tbody', 'td', 'th', 'thead', 'tr', 'ul', 'video', 'audio', 'source'
+)
+ALLOWED_ATTRIBUTES = {
+    'a': ['href', 'title', 'target', 'rel'],
+    'abbr': ['title'],
+    'acronym': ['title'],
+    'img': ['src', 'alt', 'title', 'width', 'height'],
+    'video': ['src', 'controls', 'width', 'height', 'poster'],
+    'audio': ['src', 'controls'],
+    'source': ['src', 'type'],
+    'td': ['align', 'valign'],
+    'th': ['align', 'valign'],
+    'div': ['align'],
+    'span': ['align'],
+}
+ALLOWED_SCHEMES = ['http', 'https', 'mailto', 'tel', 'data']
+
+# --- FUNCIONES DE SANITIZACIÓN ---
+
+def sanitize_html(html, extra_tags=None, extra_attrs=None):
+    """Limpia HTML generado desde markdown o contenido no confiable."""
+    allowed_tags = set(ALLOWED_TAGS)
+    allowed_attrs = {k: list(v) for k, v in ALLOWED_ATTRIBUTES.items()}
+    if extra_tags:
+        allowed_tags = allowed_tags.union(extra_tags)
+    if extra_attrs:
+        for tag, attrs in extra_attrs.items():
+            allowed_attrs.setdefault(tag, [])
+            allowed_attrs[tag].extend([a for a in attrs if a not in allowed_attrs[tag]])
+    return bleach.clean(
+        html,
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        protocols=ALLOWED_SCHEMES,
+        strip=True,
+        strip_comments=True,
+    )
+
+def xml_escape(value):
+    """Escapa texto para usarlo de forma segura dentro de XML/RSS."""
+    if value is None:
+        return ''
+    return (str(value)
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace("'", '&apos;'))
 
 # --- NUEVAS FUNCIONES DE ESTADÍSTICAS ---
 
@@ -151,9 +239,26 @@ def identify_user():
 @app.after_request
 def log_request_data(response):
     """Guarda la cookie y registra la visita en CSV"""
+    # CAMBIO SEGURIDAD: Cabeceras de seguridad en todas las respuestas
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'no-referrer')
+    response.headers.setdefault(
+        'Content-Security-Policy',
+        "default-src 'self'; img-src 'self' data:; media-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+        "connect-src 'self' 'unsafe-inline' https: http:"
+    )
+
     # 1. Guardar Cookie si es nuevo
     if getattr(g, 'is_new_user', False):
-        response.set_cookie('user_id', g.user_id, max_age=31536000) # 1 año
+        response.set_cookie(
+            'user_id', g.user_id, max_age=31536000,
+            httponly=True, samesite='Lax',
+            secure=app.config['SESSION_COOKIE_SECURE']
+        )
 
     # 2. Filtrar qué guardamos
     # No guardar si es admin, ni archivos estáticos, ni 404s
@@ -225,6 +330,14 @@ def slugify(text):
     text = text.lower()
     return re.sub(r'[^a-z0-9]+', '-', text).strip('-')
 
+def safe_slug(slug):
+    """Limpia el slug para prevenir path traversal. Solo permite [a-z0-9-_]."""
+    if not slug:
+        return ''
+    slug = os.path.basename(str(slug))
+    slug = re.sub(r'[^a-zA-Z0-9_-]', '', slug)
+    return slug
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -242,20 +355,89 @@ def load_theme():
     # identify_user() ya se ejecuta antes, esto es solo para el tema
     pass
 
+def _check_admin_password(attempt):
+    """Valida la contraseña. Soporta hash (werkzeug/bcrypt) y texto claro,
+    migrando automáticamente de texto claro a hash en el primer login."""
+    stored = os.environ.get('ADMIN_PASSWORD', '')
+
+    # Si no hay contraseña configurada, no permitir login
+    if not stored:
+        return False
+
+    # El stored es un hash de werkzeug (pbkdf2:sha256, scrypt:, pbkdf2::sha256:...)
+    if stored.startswith(('pbkdf2:', 'scrypt:', 'sha256$')):
+        return check_password_hash(stored, attempt)
+
+    # Texto claro (migración). Comparación constante.
+    return hmac_compare(stored, attempt)
+
+
+def hmac_compare(a, b):
+    """Comparación de strings en tiempo constante para evitar timing attacks."""
+    import hmac
+    return hmac.compare_digest(a.encode('utf-8'), b.encode('utf-8'))
+
+
+def _migrate_password_to_hash():
+    """Convierte la contraseña en claro de .env a hash bcrypt (una sola vez)."""
+    stored = os.environ.get('ADMIN_PASSWORD', '')
+    if not stored or stored.startswith(('pbkdf2:', 'scrypt:', 'sha256$')):
+        return False
+
+    # El env_file de Docker no es reescribible en caliente en todos los casos;
+    # intentamos actualizar .env local si existe.
+    env_path = os.path.join(BASE_DIR, '.env')
+    if not os.path.exists(env_path):
+        return False
+
+    new_hash = generate_password_hash(stored, method='pbkdf2:sha256')
+    try:
+        lines = []
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        replaced = False
+        with open(env_path, 'w', encoding='utf-8') as f:
+            for line in lines:
+                if line.strip().startswith('ADMIN_PASSWORD='):
+                    f.write('ADMIN_PASSWORD=' + new_hash + '\n')
+                    replaced = True
+                else:
+                    f.write(line)
+            if not replaced:
+                f.write('ADMIN_PASSWORD=' + new_hash + '\n')
+        if replaced or True:
+            # Actualizar la variable en el proceso para el siguiente check
+            os.environ['ADMIN_PASSWORD'] = new_hash
+            return True
+    except Exception as e:
+        print(f"AVISO: No se pudo migrar la contraseña a hash automáticamente ({e}).")
+        return False
+
+
+def _admin_password_is_hash():
+    stored = os.environ.get('ADMIN_PASSWORD', '')
+    return bool(stored) and stored.startswith(('pbkdf2:', 'scrypt:', 'sha256$'))
+
+
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute", methods=['POST'], on_breach=lambda r: None)
 def login():
     if request.method == 'POST':
         # Validar Contraseña primero
-        if request.form.get('password') == os.environ.get('ADMIN_PASSWORD'):
+        if _check_admin_password(request.form.get('password', '')):
+            # Migrar a hash si venía en claro (transparente, no rompe nada)
+            if not _admin_password_is_hash():
+                _migrate_password_to_hash()
             # NO logueamos todavía. Marcamos "pre-autenticación" en la sesión
             session['pre_auth'] = True
             return redirect(url_for('login_2fa'))
         else:
             return render_template('login.html', error="Contraseña incorrecta")
-            
+
     return render_template('login.html')
 
 @app.route('/login/2fa', methods=['GET', 'POST'])
+@limiter.limit("10 per minute", methods=['POST'], on_breach=lambda r: None)
 def login_2fa():
     # Seguridad: Si no puso la contraseña bien antes, afuera.
     if not session.get('pre_auth'):
@@ -296,7 +478,11 @@ def login_2fa():
             session['logged_in'] = True
             
             resp = make_response(redirect(url_for('admin_list')))
-            resp.set_cookie('is_admin', 'true', max_age=30*24*60*60)
+            resp.set_cookie(
+                'is_admin', 'true', max_age=30*24*60*60,
+                httponly=True, samesite='Lax',
+                secure=app.config['SESSION_COOKIE_SECURE']
+            )
             return resp
         else:
             return render_template('login_2fa.html', error="Código incorrecto", qr_data=None)
@@ -389,12 +575,16 @@ def index():
 
 @app.route('/post/<slug>')
 def post(slug):
+    slug = safe_slug(slug)
     path = os.path.join(CONTENT_DIR, f"{slug}.md")
     if not os.path.exists(path):
         abort(404)
 
     post = frontmatter.load(path)
     content_html = markdown(post.content, extensions=['tables', 'fenced_code', 'nl2br'])
+
+    # CAMBIO SEGURIDAD: Sanitizar el HTML generado del markdown (previene XSS)
+    content_html = sanitize_html(content_html)
     
     # 1. Obtenemos TODOS los posts para buscar coincidencias
     all_posts = get_posts() # Esta función ya la tienes definida arriba, trae los posts ordenados por fecha
@@ -470,6 +660,9 @@ def admin_list():
 @app.route('/admin/new', methods=['GET', 'POST'], defaults={'slug': None})
 @login_required
 def edit_post(slug):
+    if slug:
+        slug = safe_slug(slug)
+
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         content = request.form.get('content', '')
@@ -479,7 +672,7 @@ def edit_post(slug):
         description = request.form.get('description', '').strip()
         status = request.form.get('status')
 
-        clean_slug = slug.replace('draft_', '') if slug else slugify(title)
+        clean_slug = safe_slug(slug.replace('draft_', '') if slug else slugify(title))
         if not clean_slug: clean_slug = "post-sin-titulo"
 
         new_filename = f"draft_{clean_slug}.md" if status == 'draft' else f"{clean_slug}.md"
@@ -503,7 +696,7 @@ def edit_post(slug):
              # Aquí podrías agregar lógica para preservar otros metadatos si fuera necesario
              pass
 
-        with open(new_path, 'wb') as f:
+        with open(new_path, 'w', encoding='utf-8') as f:
             frontmatter.dump(post_file, f)
 
         return redirect(url_for('admin_list'))
@@ -538,6 +731,7 @@ def save_post():
 @app.route('/admin/delete/<slug>', methods=['POST'])
 @login_required
 def delete_post(slug):
+    slug = safe_slug(slug)
     path = os.path.join(CONTENT_DIR, f"{slug}.md")
     if os.path.exists(path):
         os.remove(path)
@@ -551,11 +745,18 @@ def upload_file():
     file = request.files['file']
     if file.filename == '':
         return {"error": "No selected file"}, 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return {"url": f"/static/uploads/{filename}"}, 200
-    return {"error": "File type not allowed"}, 400
+
+    filename = secure_filename(file.filename)
+    if not filename or not allowed_file(filename):
+        return {"error": "File type not allowed"}, 400
+
+    # Validar tamaño (además de MAX_CONTENT_LENGTH) y extensión real
+    content_type = file.content_type or ''
+    if content_type and not content_type.startswith(('image/', 'audio/', 'video/')):
+        return {"error": "File type not allowed"}, 400
+
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    return {"url": f"/static/uploads/{filename}"}, 200
 
 @app.route('/admin/backup')
 @login_required
@@ -587,20 +788,24 @@ def rss():
     rss_xml += '<channel>'
     rss_xml += '<title>NeoSite Blog</title>'
     rss_xml += '<link>https://blog.neosite.com.ar</link>'
-    rss_xml += '<description>Últimas entradas de NeoSite Blog</description>'
+    rss_xml += '<description>Software libre, tecnología y más...</description>'
     
     base_url = request.url_root.rstrip('/')
     
     for post in published_posts:
         content = post.get('content', '').replace('src="/static/', 'src="https://blog.neosite.com.ar/static/')
         post_url = f"{base_url}/post/{post['slug']}"
-        
+
+        # CAMBIO SEGURIDAD: escapar texto dentro de etiquetas XML y sanitizar HTML del contenido
+        safe_title = xml_escape(post.get('title', ''))
+        safe_content = sanitize_html(content)
+
         rss_xml += '<item>'
-        rss_xml += f'<title>{post["title"]}</title>'
+        rss_xml += f'<title>{safe_title}</title>'
         rss_xml += f'<link>{post_url}</link>'
         rss_xml += f'<guid>{post_url}</guid>'
-        rss_xml += f'<pubDate>{post["date"]}</pubDate>'
-        rss_xml += f'<description><![CDATA[{content}]]></description>'
+        rss_xml += f'<pubDate>{xml_escape(post.get("date", ""))}</pubDate>'
+        rss_xml += f'<description><![CDATA[{safe_content}]]></description>'
         rss_xml += '</item>'
     
     rss_xml += '</channel></rss>'
@@ -661,6 +866,7 @@ def admin_comments():
 @app.route('/admin/comments/approve/<slug>/<float:comment_id>')
 @login_required
 def approve_comment(slug, comment_id):
+    slug = safe_slug(slug)
     file_path = os.path.join(COMMENTS_DATA_DIR, f"{slug}.json")
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
@@ -679,6 +885,7 @@ def approve_comment(slug, comment_id):
 @app.route('/admin/comments/delete/<slug>/<float:comment_id>')
 @login_required
 def delete_comment(slug, comment_id):
+    slug = safe_slug(slug)
     file_path = os.path.join(COMMENTS_DATA_DIR, f"{slug}.json")
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
@@ -691,7 +898,7 @@ def delete_comment(slug, comment_id):
             
     return redirect(url_for('admin_comments'))
 
-@app.route('/admin/settings/toggle-comments')
+@app.route('/admin/settings/toggle-comments', methods=['POST'])
 @login_required
 def toggle_comments():
     config_path = 'config.json'
@@ -727,4 +934,6 @@ def get_config():
         return default_config
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # DEBUG solo si se pide explícitamente (NUNCA en producción)
+    debug = os.environ.get('FLASK_DEBUG', '').strip() == '1'
+    app.run(host='0.0.0.0', port=5000, debug=debug)

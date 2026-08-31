@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-    <title>Tu blog en Español</title>
+    <title>NeoSite Blog</title>
     <link>{{ url_for('index', _external=True) }}</link>
-    <description>Descripción del blog</description>
+    <description>Software libre, tecnología y más...</description>
     <language>es-es</language>
     <lastBuildDate>{{ now.strftime('%a, %d %b %Y %H:%M:%S +0000') }}</lastBuildDate>
     <atom:link href="{{ url_for('rss', _external=True) }}" rel="self" type="application/rss+xml" />

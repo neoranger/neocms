@@ -126,6 +126,15 @@
             const API_BASE = "{{ comments_api_url }}".replace(/\/$/, "");
             const API_URL = `${API_BASE}/comments/${currentSlug}`;
 
+            function escapeHtml(value) {
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
             async function loadComments() {
                 try {
                     const response = await fetch(API_URL, { method: 'GET' });
@@ -151,10 +160,10 @@
                     container.innerHTML = approved.map(c => `
                         <div class="comment-bubble">
                             <div class="comment-header">
-                                <span class="comment-author">@${c.author}</span>
-                                <span class="comment-date"><i class="fa-regular fa-clock"></i> ${c.date}</span>
+                                <span class="comment-author">@${escapeHtml(c.author)}</span>
+                                <span class="comment-date"><i class="fa-regular fa-clock"></i> ${escapeHtml(c.date)}</span>
                             </div>
-                            <p class="comment-text">${c.text}</p>
+                            <p class="comment-text">${escapeHtml(c.text)}</p>
                         </div>
                     `).join('');
                 } catch (e) { console.error("Error cargando comentarios:", e); }
