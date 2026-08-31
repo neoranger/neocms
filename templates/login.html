@@ -13,7 +13,11 @@
         
         <h2 style="margin: 0 0 10px 0; font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; color: var(--text-primary);">Panel de Administración</h2>
         <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 30px;">Introduce la contraseña para acceder al gestor.</p>
-        
+	{% if error %}
+	    <div style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+	        <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+	    </div>
+	{% endif %}        
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div style="margin-bottom: 20px; text-align: left;">
