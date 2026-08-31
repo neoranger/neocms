@@ -434,9 +434,9 @@ def _migrate_password_to_hash():
             # Actualizar la variable en el proceso para el siguiente check
             os.environ['ADMIN_PASSWORD'] = new_hash
             return True
-    except Exception as e:
-        print(f"AVISO: No se pudo migrar la contraseña a hash automáticamente ({e}).")
-        return False
+    except Exception:
+        pass
+    return False
 
 
 def _admin_password_is_hash():
