@@ -10,7 +10,7 @@ chown -R appuser:appgroup \
     /app/config.json \
     /app/stats.csv \
     /app/stats.lock \
-    /app/.totp_secret \
+    /app/totp \
     2>/dev/null || true
 
 # Degradar a appuser (setpriv viene con util-linux) y ejecutar el comando

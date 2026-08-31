@@ -29,7 +29,9 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-TOTP_FILE = os.path.join(BASE_DIR, '.totp_secret')
+TOTP_DIR = os.path.join(BASE_DIR, 'totp')
+os.makedirs(TOTP_DIR, exist_ok=True)
+TOTP_FILE = os.path.join(TOTP_DIR, '.totp_secret')
 
 # CAMBIO 1: Archivo CSV en lugar de JSON
 STATS_FILE = os.path.join(BASE_DIR, 'stats.csv') 

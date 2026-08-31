@@ -14,14 +14,21 @@ services:
       - ./config.json:/app/config.json
       - ./stats.csv:/app/stats.csv
       # Volumen persistente y escribible para el secreto 2FA (la app lo crea si no existe)
-      - totp_secret:/app/.totp_secret
+      - totp_secret:/app/totp
       # El archivo de lock debe poder crearse junto a stats.csv
       - ./stats.lock:/app/stats.lock
-    # CAMBIO SEGURIDAD: Hardening del contenedor
+    # CAMBIO SEGURIDAD: Hardening del contenedor.
+    # El entrypoint arranca como root para ajustar permisos y luego degrada a
+    # appuser (no-root). Por eso necesita SOLO estas 4 capacidades mínimas.
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
     read_only: true
     tmpfs:
       - /tmp
@@ -51,6 +58,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
     read_only: true
     tmpfs:
       - /tmp

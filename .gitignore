@@ -40,3 +40,4 @@ docker-compose.yml
 
 # Entorno y Secretos
 .totp_secret
+totp/
