@@ -29,6 +29,10 @@ from flask_wtf.csrf import CSRFError
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Cargar .env PRIMERO, antes de leer cualquier variable de entorno de configuración
+# (SECRET_KEY, COOKIE_SECURE, TWO_FA_ENABLED, etc.).
+load_dotenv()
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 TOTP_DIR = os.path.join(BASE_DIR, 'totp')
 os.makedirs(TOTP_DIR, exist_ok=True)
@@ -45,7 +49,6 @@ LOCK_FILE = os.path.join('/tmp', 'neocms_stats.lock')
 TWO_FA_ENABLED = os.environ.get('TWO_FA_ENABLED', '1').strip() != '0'
 
 COMMENTS_DATA_DIR = 'comments_data/'
-load_dotenv() 
 
 app = Flask(__name__)
 
