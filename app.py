@@ -454,21 +454,16 @@ def login():
             if not _admin_password_is_hash():
                 _migrate_password_to_hash()
 
-            # Si el 2FA está desactivado (TWO_FA_ENABLED=0), entrar directo al admin
-            if not TWO_FA_ENABLED:
-                session.pop('pre_auth', None)
-                session['logged_in'] = True
-                resp = make_response(redirect(url_for('admin_list')))
-                resp.set_cookie(
-                    'is_admin', 'true', max_age=30*24*60*60,
-                    httponly=True, samesite='Lax',
-                    secure=app.config['SESSION_COOKIE_SECURE']
-                )
-                return resp
-
-            # NO logueamos todavía. Marcamos "pre-autenticación" en la sesión
-            session['pre_auth'] = True
-            return redirect(url_for('login_2fa'))
+            # Login directo al admin (el 2FA quedó eliminado del flujo)
+            session.pop('pre_auth', None)
+            session['logged_in'] = True
+            resp = make_response(redirect(url_for('admin_list')))
+            resp.set_cookie(
+                'is_admin', 'true', max_age=30*24*60*60,
+                httponly=True, samesite='Lax',
+                secure=app.config['SESSION_COOKIE_SECURE']
+            )
+            return resp
         else:
             return render_template('login.html', error="Contraseña incorrecta")
 
@@ -479,67 +474,15 @@ def login():
 @app.route('/login/2fa', methods=['GET', 'POST'])
 @limiter.limit("10 per minute", methods=['POST'], on_breach=lambda r: None)
 def login_2fa():
-    # Seguridad: Si no puso la contraseña bien antes, afuera.
-    # El redirect explícito evita que el navegador "reintente el POST" en un loop
-    # silencioso cuando la sesión (pre_auth) no persistió.
-    if not session.get('pre_auth'):
-        return redirect(url_for('login', expired=1))
+    # El 2FA quedó eliminado del flujo de acceso. Si alguien llega a esta ruta
+    # directamente, lo redirigimos siempre (nunca se muestra la pantalla de 2FA):
+    # al admin si ya está logueado, o al login si no.
+    if session.get('logged_in'):
+        return redirect(url_for('admin_list'))
+    return redirect(url_for('login'))
 
-    # Verificamos si ya existe una configuración 2FA guardada
-    totp_secret = None
-    first_time = False
-    
-    if os.path.exists(TOTP_FILE):
-        with open(TOTP_FILE, 'r') as f:
-            totp_secret = f.read().strip()
-    else:
-        # PRIMERA VEZ: Generamos secreto nuevo
-        first_time = True
-        if 'temp_secret' not in session:
-            session['temp_secret'] = pyotp.random_base32()
-        totp_secret = session['temp_secret']
-
-    # Objeto TOTP
-    totp = pyotp.TOTP(totp_secret)
-
-    if request.method == 'POST':
-        code = request.form.get('code')
-        
-        # Validar código
-        if totp.verify(code):
-            # ¡ÉXITO!
-            
-            # Si era la primera vez, GUARDAMOS el secreto permanentemente ahora
-            if first_time:
-                with open(TOTP_FILE, 'w') as f:
-                    f.write(totp_secret)
-                session.pop('temp_secret', None) # Limpieza
-
-            # Limpiamos pre_auth y damos acceso full
-            session.pop('pre_auth', None)
-            session['logged_in'] = True
-            
-            resp = make_response(redirect(url_for('admin_list')))
-            resp.set_cookie(
-                'is_admin', 'true', max_age=30*24*60*60,
-                httponly=True, samesite='Lax',
-                secure=app.config['SESSION_COOKIE_SECURE']
-            )
-            return resp
-        else:
-            return render_template('login_2fa.html', error="Código incorrecto", qr_data=None)
-
-    # Lógica GET (Mostrar formulario)
-    qr_b64 = None
-    if first_time:
-        # Generar QR para escanear
-        uri = totp.provisioning_uri(name='Admin', issuer_name='NeoCMS')
-        img = qrcode.make(uri)
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        qr_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-    return render_template('login_2fa.html', first_time=first_time, qr_code=qr_b64)
+    # El código de verificación 2FA (TOTP/QR) quedó eliminado del flujo de acceso.
+    # Esta función solo redirige. (código muerto eliminado)
 
 @app.route('/logout')
 def logout():
