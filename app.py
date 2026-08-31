@@ -445,6 +445,7 @@ def _admin_password_is_hash():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@csrf.exempt
 @limiter.limit("10 per minute", methods=['POST'], on_breach=lambda r: None)
 def login():
     if request.method == 'POST':
