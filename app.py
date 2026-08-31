@@ -25,6 +25,7 @@ from io import BytesIO
 import base64
 import bleach
 from flask_wtf import CSRFProtect
+from flask_wtf.csrf import CSRFError
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -34,8 +35,14 @@ os.makedirs(TOTP_DIR, exist_ok=True)
 TOTP_FILE = os.path.join(TOTP_DIR, '.totp_secret')
 
 # CAMBIO 1: Archivo CSV en lugar de JSON
-STATS_FILE = os.path.join(BASE_DIR, 'stats.csv') 
-LOCK_FILE = os.path.join(BASE_DIR, 'stats.lock')
+STATS_FILE = os.path.join(BASE_DIR, 'stats.csv')
+# El lock de estadísticas va a /tmp (escribible, tmpfs), NO a un bind mount que
+# pueda ser un directorio (evita 'Is a directory'). Solo sincroniza en runtime.
+LOCK_FILE = os.path.join('/tmp', 'neocms_stats.lock')
+
+# CAMBIO: Toggle 2FA. Con '0' el login va directo al admin tras la contraseña;
+# con '1' (default) exige el código TOTP. Se controla desde .env sin tocar código.
+TWO_FA_ENABLED = os.environ.get('TWO_FA_ENABLED', '1').strip() != '0'
 
 COMMENTS_DATA_DIR = 'comments_data/'
 load_dotenv() 
@@ -66,6 +73,19 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # CAMBIO SEGURIDAD: Protección CSRF para los métodos que mutan estado
 csrf = CSRFProtect(app)
+
+
+# Verificación CSRF: si falla, mostrar un mensaje claro en vez de un 400 crudo
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return (
+        "<html><body style='font-family:sans-serif;text-align:center;padding:40px'>"
+        "<h2>Error de validación CSRF</h2>"
+        "<p>La solicitud fue rechazada por protección CSRF. "
+        "Recargá la página e intentá de nuevo.</p>"
+        f"<p><em>{e}</em></p></body></html>",
+        400,
+    )
 
 # CAMBIO SEGURIDAD: Rate limiting contra fuerza bruta.
 # Se aplican límites explícitos a /login y /login/2fa (rutas sensibles).
@@ -430,20 +450,37 @@ def login():
             # Migrar a hash si venía en claro (transparente, no rompe nada)
             if not _admin_password_is_hash():
                 _migrate_password_to_hash()
+
+            # Si el 2FA está desactivado (TWO_FA_ENABLED=0), entrar directo al admin
+            if not TWO_FA_ENABLED:
+                session.pop('pre_auth', None)
+                session['logged_in'] = True
+                resp = make_response(redirect(url_for('admin_list')))
+                resp.set_cookie(
+                    'is_admin', 'true', max_age=30*24*60*60,
+                    httponly=True, samesite='Lax',
+                    secure=app.config['SESSION_COOKIE_SECURE']
+                )
+                return resp
+
             # NO logueamos todavía. Marcamos "pre-autenticación" en la sesión
             session['pre_auth'] = True
             return redirect(url_for('login_2fa'))
         else:
             return render_template('login.html', error="Contraseña incorrecta")
 
+    if request.args.get('expired'):
+        return render_template('login.html', error="La sesión expiró. Volvé a ingresar tu contraseña.")
     return render_template('login.html')
 
 @app.route('/login/2fa', methods=['GET', 'POST'])
 @limiter.limit("10 per minute", methods=['POST'], on_breach=lambda r: None)
 def login_2fa():
     # Seguridad: Si no puso la contraseña bien antes, afuera.
+    # El redirect explícito evita que el navegador "reintente el POST" en un loop
+    # silencioso cuando la sesión (pre_auth) no persistió.
     if not session.get('pre_auth'):
-        return redirect(url_for('login'))
+        return redirect(url_for('login', expired=1))
 
     # Verificamos si ya existe una configuración 2FA guardada
     totp_secret = None

@@ -4,7 +4,7 @@ services:
     restart: always
     container_name: NeoCMS_web
     ports:
-      - "5053:5000"
+      - "5000:5000"
     env_file:
       - .env
     volumes:
@@ -15,8 +15,7 @@ services:
       - ./stats.csv:/app/stats.csv
       # Volumen persistente y escribible para el secreto 2FA (la app lo crea si no existe)
       - totp_secret:/app/totp
-      # El archivo de lock debe poder crearse junto a stats.csv
-      - ./stats.lock:/app/stats.lock
+    # El lock de stats se maneja en /tmp (tmpfs) desde app.py; no se monta aquí.
     # CAMBIO SEGURIDAD: Hardening del contenedor.
     # El entrypoint arranca como root para ajustar permisos y luego degrada a
     # appuser (no-root). Por eso necesita SOLO estas 4 capacidades mínimas.
@@ -42,7 +41,7 @@ services:
     # La API de comentarios la consume el navegador del visitante, por eso se
     # expone al host. Configura COMMENTS_API_URL con esta misma dirección.
     ports:
-      - "5054:5001"
+      - "5001:5001"
     env_file:
       - .env
     environment:

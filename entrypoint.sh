@@ -9,7 +9,6 @@ chown -R appuser:appgroup \
     /app/comments_data \
     /app/config.json \
     /app/stats.csv \
-    /app/stats.lock \
     /app/totp \
     2>/dev/null || true
 
