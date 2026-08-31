@@ -244,7 +244,7 @@ def log_request_data(response):
     # CAMBIO SEGURIDAD: Cabeceras de seguridad en todas las respuestas
     response.headers.setdefault('X-Content-Type-Options', 'nosniff')
     response.headers.setdefault('X-Frame-Options', 'DENY')
-    response.headers.setdefault('Referrer-Policy', 'no-referrer')
+    response.headers.setdefault('Referrer-Policy', 'same-origin')
     response.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; img-src 'self' data:; media-src 'self' data:; "
