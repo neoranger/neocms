@@ -89,7 +89,10 @@ _init_db()
 # con '1' (default) exige el código TOTP. Se controla desde .env sin tocar código.
 TWO_FA_ENABLED = os.environ.get('TWO_FA_ENABLED', '1').strip() != '0'
 
-COMMENTS_DATA_DIR = 'comments_data/'
+# Directorio donde el microservicio de comentarios guarda los JSON.
+# El microservicio usa 'data/comments' montado en ./comments_data:/app/data,
+# por lo que en el host los archivos quedan en comments_data/comments/.
+COMMENTS_DATA_DIR = 'comments_data/comments/'
 
 app = Flask(__name__)
 
