@@ -20,6 +20,7 @@ data/
 # Contenido dinámico del Blog (Posts y Comentarios)
 content/
 comments_data/
+comments_data/comments/ejemplo-de-post.json
 
 # Archivos subidos por los usuarios
 static/uploads/
