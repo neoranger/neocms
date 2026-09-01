@@ -44,6 +44,13 @@ DB_FILE = os.path.join(BASE_DIR, 'stats.db')
 def _init_db():
     """Crea la tabla de visitas si no existe. SQLite maneja el locking por
     transacciones (no se necesita FileLock manual)."""
+    # Si el path fue montado como un DIRECTORIO (p. ej. bind de un archivo que no
+    # existía al crear el contenedor), SQLite no puede abrirlo. Lo detectamos y
+    # logueamos en vez de derribar el arranque.
+    if os.path.isdir(DB_FILE):
+        print(f"ERROR STATS: {DB_FILE} es un directorio, no un archivo de base de datos. "
+              "Creá un archivo stats.db VACÍO en el host y recreá el contenedor.")
+        return
     with sqlite3.connect(DB_FILE) as conn:
         conn.execute(
             """
