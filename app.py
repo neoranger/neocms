@@ -38,37 +38,48 @@ os.makedirs(TOTP_DIR, exist_ok=True)
 TOTP_FILE = os.path.join(TOTP_DIR, '.totp_secret')
 
 # CAMBIO 1: Base de datos SQLite para estadísticas (reemplaza al antiguo CSV)
-DB_FILE = os.path.join(BASE_DIR, 'stats.db')
+# Vive en un SUBDIRECTORIO escribible (data/) para que SQLite pueda crear junto al
+# archivo sus journals auxiliares (-journal/-wal/-shm) aunque /app sea read-only.
+DB_DIR = os.path.join(BASE_DIR, 'data')
+DB_FILE = os.path.join(DB_DIR, 'stats.db')
 
 
 def _init_db():
     """Crea la tabla de visitas si no existe. SQLite maneja el locking por
     transacciones (no se necesita FileLock manual)."""
+    # Asegurar que el directorio de la DB exista y sea escribible
+    try:
+        os.makedirs(DB_DIR, exist_ok=True)
+    except Exception as e:
+        print(f"ERROR STATS: no se pudo crear {DB_DIR}: {e}")
+        return
     # Si el path fue montado como un DIRECTORIO (p. ej. bind de un archivo que no
     # existía al crear el contenedor), SQLite no puede abrirlo. Lo detectamos y
     # logueamos en vez de derribar el arranque.
     if os.path.isdir(DB_FILE):
-        print(f"ERROR STATS: {DB_FILE} es un directorio, no un archivo de base de datos. "
-              "Creá un archivo stats.db VACÍO en el host y recreá el contenedor.")
+        print(f"ERROR STATS: {DB_FILE} es un directorio, no un archivo de base de datos.")
         return
-    with sqlite3.connect(DB_FILE) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS visits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                user_id TEXT NOT NULL,
-                action TEXT,
-                detail TEXT,
-                os TEXT,
-                location TEXT,
-                ip TEXT
+    try:
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS visits (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    action TEXT,
+                    detail TEXT,
+                    os TEXT,
+                    location TEXT,
+                    ip TEXT
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_detail ON visits(detail)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_detail ON visits(detail)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id)")
+    except Exception as e:
+        print(f"ERROR STATS: no se pudo inicializar la base ({e}).")
 
 
 # Inicializar la DB al cargar el módulo (gunicorn importa el módulo, no ejecuta __main__)

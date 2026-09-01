@@ -15,6 +15,7 @@ stats.db
 stats.db-wal
 stats.db-shm
 stats.db-journal
+data/
 
 # Contenido dinámico del Blog (Posts y Comentarios)
 content/

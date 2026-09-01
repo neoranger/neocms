@@ -8,7 +8,7 @@ chown -R appuser:appgroup \
     /app/static/uploads \
     /app/comments_data \
     /app/config.json \
-    /app/stats.db \
+    /app/data \
     /app/totp \
     2>/dev/null || true
 
