@@ -90,7 +90,7 @@ neocms/
 ├── Dockerfile            # Definición de imagen (compartida)
 ├── docker-compose.yml    # Orquestación de servicios
 ├── requirements.txt      # Dependencias Python
-└── stats.csv             # Base de datos de visitas (Persistente)
+└── stats.db             # Base de datos de visitas (SQLite, Persistente)
 ```
 
 ### 🤖 Uso del Bot de Telegram
@@ -104,7 +104,7 @@ Los datos importantes residen en carpetas mapeadas como volúmenes. Para hacer u
 - Carpeta content/
 - Carpeta comments_data/
 - Carpeta static/uploads/
-- Archivo stats.csv
+- Archivo stats.db
 - Archivo .env
 
 ---

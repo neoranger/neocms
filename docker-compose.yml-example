@@ -12,10 +12,10 @@ services:
       - ./static/uploads:/app/static/uploads
       - ./comments_data:/app/comments_data
       - ./config.json:/app/config.json
-      - ./stats.csv:/app/stats.csv
+      - ./stats.db:/app/stats.db
       # Volumen persistente y escribible para el secreto 2FA (la app lo crea si no existe)
       - totp_secret:/app/totp
-    # El lock de stats se maneja en /tmp (tmpfs) desde app.py; no se monta aquí.
+    # El locking de stats lo maneja SQLite internamente; no se necesita lock manual.
     # CAMBIO SEGURIDAD: Hardening del contenedor.
     # El entrypoint arranca como root para ajustar permisos y luego degrada a
     # appuser (no-root). Por eso necesita SOLO estas 4 capacidades mínimas.

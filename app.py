@@ -14,8 +14,7 @@ import zipfile
 import json
 import glob
 from dotenv import load_dotenv
-from filelock import FileLock
-import csv
+import sqlite3
 import uuid
 import requests
 from collections import Counter
@@ -38,11 +37,35 @@ TOTP_DIR = os.path.join(BASE_DIR, 'totp')
 os.makedirs(TOTP_DIR, exist_ok=True)
 TOTP_FILE = os.path.join(TOTP_DIR, '.totp_secret')
 
-# CAMBIO 1: Archivo CSV en lugar de JSON
-STATS_FILE = os.path.join(BASE_DIR, 'stats.csv')
-# El lock de estadísticas va a /tmp (escribible, tmpfs), NO a un bind mount que
-# pueda ser un directorio (evita 'Is a directory'). Solo sincroniza en runtime.
-LOCK_FILE = os.path.join('/tmp', 'neocms_stats.lock')
+# CAMBIO 1: Base de datos SQLite para estadísticas (reemplaza al antiguo CSV)
+DB_FILE = os.path.join(BASE_DIR, 'stats.db')
+
+
+def _init_db():
+    """Crea la tabla de visitas si no existe. SQLite maneja el locking por
+    transacciones (no se necesita FileLock manual)."""
+    with sqlite3.connect(DB_FILE) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS visits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                action TEXT,
+                detail TEXT,
+                os TEXT,
+                location TEXT,
+                ip TEXT
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_detail ON visits(detail)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_user ON visits(user_id)")
+
+
+# Inicializar la DB al cargar el módulo (gunicorn importa el módulo, no ejecuta __main__)
+_init_db()
 
 # CAMBIO: Toggle 2FA. Con '0' el login va directo al admin tras la contraseña;
 # con '1' (default) exige el código TOTP. Se controla desde .env sin tocar código.
@@ -180,8 +203,8 @@ def get_location_by_ip(ip):
         pass
     return "Desconocido"
 
-def analyze_csv_stats():
-    """Lee el CSV y reconstruye los diccionarios para el Admin deduplicando y filtrando bots"""
+def analyze_stats():
+    """Lee la DB SQLite y reconstruye los diccionarios para el Admin deduplicando y filtrando bots"""
     stats = {
         'daily': Counter(),
         'posts': Counter(),
@@ -190,58 +213,56 @@ def analyze_csv_stats():
         'total': 0
     }
     
-    if not os.path.exists(STATS_FILE):
+    if not os.path.exists(DB_FILE):
         return stats
 
     seen_visits = set()
     ignored_paths = ['/login', '/login/2fa', '/logout', '/rss.xml', '/favicon.ico']
 
     try:
-        with open(STATS_FILE, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                user_id = row['User_ID']
-                detail = row['Detail']
-                timestamp_str = row['Timestamp']
+        conn = sqlite3.connect(DB_FILE)
+        rows = conn.execute("SELECT timestamp, user_id, detail, os, location FROM visits").fetchall()
+        conn.close()
+        for timestamp_str, user_id, detail, os_name, location in rows:
+            
+            # 1. Ignorar páginas técnicas/administrativas
+            if detail in ignored_paths or detail.startswith('/admin'):
+                continue
+            
+            # 2. Heurística de deduplicación (Sesión de 30 minutos)
+            try:
+                dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                rounded_time = dt.replace(minute=(dt.minute // 30) * 30, second=0, microsecond=0)
+                visit_key = (user_id, detail, rounded_time)
+            except ValueError:
+                visit_key = (user_id, detail, timestamp_str[:13]) # Fallback por hora
+            
+            if visit_key in seen_visits:
+                continue
                 
-                # 1. Ignorar páginas técnicas/administrativas
-                if detail in ignored_paths or detail.startswith('/admin'):
-                    continue
-                
-                # 2. Heurística de deduplicación (Sesión de 30 minutos)
-                try:
-                    dt = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
-                    rounded_time = dt.replace(minute=(dt.minute // 30) * 30, second=0, microsecond=0)
-                    visit_key = (user_id, detail, rounded_time)
-                except ValueError:
-                    visit_key = (user_id, detail, timestamp_str[:13]) # Fallback por hora
-                
-                if visit_key in seen_visits:
-                    continue
-                    
-                seen_visits.add(visit_key)
+            seen_visits.add(visit_key)
 
-                # Incrementar contadores
-                stats['total'] += 1
-                
-                # Fecha (YYYY-MM-DD) extraída del timestamp
-                date_only = timestamp_str.split(' ')[0]
-                stats['daily'][date_only] += 1
-                
-                # Posts (slugs)
-                if detail != 'home' and not detail.startswith('/'):
-                     stats['posts'][detail] += 1
-                elif detail.startswith('/post/'):
-                     # Limpiar "/post/slug" a "slug"
-                     slug = detail.replace('/post/', '')
-                     stats['posts'][slug] += 1
-                elif detail == 'home':
-                     stats['posts']['home'] += 1
+            # Incrementar contadores
+            stats['total'] += 1
+            
+            # Fecha (YYYY-MM-DD) extraída del timestamp
+            date_only = timestamp_str.split(' ')[0]
+            stats['daily'][date_only] += 1
+            
+            # Posts (slugs)
+            if detail != 'home' and not detail.startswith('/'):
+                 stats['posts'][detail] += 1
+            elif detail.startswith('/post/'):
+                 # Limpiar "/post/slug" a "slug"
+                 slug = detail.replace('/post/', '')
+                 stats['posts'][slug] += 1
+            elif detail == 'home':
+                 stats['posts']['home'] += 1
 
-                # OS y Ubicación
-                stats['os'][row.get('OS', 'Otro')] += 1
-                stats['location'][row.get('Location', 'Desconocido')] += 1
-                
+            # OS y Ubicación
+            stats['os'][os_name or 'Otro'] += 1
+            stats['location'][location or 'Desconocido'] += 1
+            
     except Exception as e:
         print(f"Error analizando CSV: {e}")
         
@@ -314,25 +335,22 @@ def log_request_data(response):
     os_name = get_os_from_ua(request.user_agent.string)
     location = get_location_by_ip(ip)
     
-    # 4. Escribir en CSV (Con Lock por seguridad)
-    lock = FileLock(LOCK_FILE)
+    # 4. Escribir en la DB SQLite (SQLite maneja el locking por transacción)
     try:
-        with lock:
-            file_exists = os.path.exists(STATS_FILE)
-            with open(STATS_FILE, 'a', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                if not file_exists:
-                    writer.writerow(["Timestamp", "User_ID", "Action", "Detail", "OS", "Location", "IP"])
-                
-                writer.writerow([
+        with sqlite3.connect(DB_FILE) as conn:
+            conn.execute(
+                "INSERT INTO visits (timestamp, user_id, action, detail, os, location, ip) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
                     datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     g.user_id,
                     "VIEW",
                     path_detail,
                     os_name,
                     location,
-                    ip # Guardamos IP por seguridad, pero no la mostramos si no quieres
-                ])
+                    ip  # Guardamos IP por seguridad, pero no la mostramos si no quieres
+                )
+            )
     except Exception as e:
         print(f"Error escribiendo stats: {e}")
 
@@ -612,8 +630,8 @@ def post(slug):
 def admin_list():
     posts = get_posts()
     
-    # CAMBIO: Usamos el analizador de CSV
-    stats_data = analyze_csv_stats()
+    # CAMBIO: Usamos el analizador de stats (SQLite)
+    stats_data = analyze_stats()
     
     # Procesar datos para el Dashboard
     # Convertimos Counters a diccionarios normales para evitar problemas en Jinja
@@ -757,9 +775,9 @@ def backup():
         for root, _, files in os.walk(UPLOAD_FOLDER):
             for file in files:
                 zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), os.path.join(app.root_path, 'static')))
-        # Agregamos también el CSV de stats al backup
-        if os.path.exists(STATS_FILE):
-             zipf.write(STATS_FILE, 'stats.csv')
+        # Agregamos también la DB de stats al backup
+        if os.path.exists(DB_FILE):
+             zipf.write(DB_FILE, 'stats.db')
 
     return send_file(backup_path, as_attachment=True, download_name=backup_filename)
 
@@ -800,16 +818,38 @@ def rss():
 @app.route('/admin/export-stats')
 @login_required
 def export_stats():
-    # Devuelve el CSV en bruto
-    if os.path.exists(STATS_FILE):
-        return send_file(STATS_FILE, as_attachment=True)
-    return "No stats yet"
+    # Genera el CSV de stats bajo demanda a partir de la DB SQLite
+    import csv
+    if not os.path.exists(DB_FILE):
+        return "No stats yet"
+
+    buffer = BytesIO()
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        rows = conn.execute(
+            "SELECT timestamp, user_id, action, detail, os, location, ip "
+            "FROM visits ORDER BY timestamp"
+        ).fetchall()
+        conn.close()
+        writer = csv.writer(buffer)
+        writer.writerow(["Timestamp", "User_ID", "Action", "Detail", "OS", "Location", "IP"])
+        writer.writerows(rows)
+    except Exception as e:
+        print(f"Error exportando stats: {e}")
+        return "Error exportando stats"
+
+    buffer.seek(0)
+    return Response(
+        buffer.getvalue(),
+        mimetype='text/csv',
+        headers={"Content-Disposition": "attachment; filename=stats.csv"}
+    )
      
 @app.route('/admin/stats')
 @login_required
 def full_stats():
     # CAMBIO: Analizar CSV completo
-    stats_data = analyze_csv_stats()
+    stats_data = analyze_stats()
     
     # Ordenar historial
     sorted_days = sorted(stats_data['daily'].items(), reverse=True)

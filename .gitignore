@@ -11,6 +11,10 @@ ENV/
 stats.csv
 stats.lock
 stats.json
+stats.db
+stats.db-wal
+stats.db-shm
+stats.db-journal
 
 # Contenido dinámico del Blog (Posts y Comentarios)
 content/
