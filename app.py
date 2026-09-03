@@ -721,7 +721,7 @@ def edit_post(slug):
              # Aquí podrías agregar lógica para preservar otros metadatos si fuera necesario
              pass
 
-        with open(new_path, 'w', encoding='utf-8') as f:
+        with open(new_path, 'wb') as f:
             frontmatter.dump(post_file, f)
 
         return redirect(url_for('admin_list'))
