@@ -313,7 +313,7 @@ def log_request_data(response):
     response.headers.setdefault(
         'Content-Security-Policy',
         "default-src 'self'; img-src 'self' data:; media-src 'self' data:; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
         "connect-src 'self' 'unsafe-inline' https: http:"
