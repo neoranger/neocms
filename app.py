@@ -317,7 +317,7 @@ def log_request_data(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "connect-src 'self' 'unsafe-inline' https: http: "
+        "connect-src 'self' 'unsafe-inline' https: http:; "
         "frame-src 'self' https://neocast.neosite.com.ar https://www.youtube.com https://youtube.com;"
     )
 
