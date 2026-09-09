@@ -147,13 +147,14 @@ limiter = Limiter(
 # Niveles/atributos HTML permitidos al sanitizar el contenido markdown y el RSS
 ALLOWED_TAGS = (
     'a', 'abbr', 'acronym', 'b', 'blockquote', 'br', 'code', 'dd', 'del', 'div',
-    'dl', 'dt', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'li',
+    'dl', 'dt', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'iframe', 'img', 'li',
     'ol', 'p', 'pre', 's', 'span', 'strike', 'strong', 'sub', 'sup', 'table',
     'tbody', 'td', 'th', 'thead', 'tr', 'ul', 'video', 'audio', 'source'
 )
 ALLOWED_ATTRIBUTES = {
     'a': ['href', 'title', 'target', 'rel'],
     'abbr': ['title'],
+    'iframe': ['src', 'width', 'height', 'frameborder', 'scrolling', 'style', 'allow', 'allowfullscreen'],
     'acronym': ['title'],
     'img': ['src', 'alt', 'title', 'width', 'height'],
     'video': ['src', 'controls', 'width', 'height', 'poster'],
@@ -316,7 +317,8 @@ def log_request_data(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-        "connect-src 'self' 'unsafe-inline' https: http:"
+        "connect-src 'self' 'unsafe-inline' https: http: "
+        "frame-src 'self' https://neocast.neosite.com.ar https://www.youtube.com https://youtube.com;"
     )
 
     # 1. Guardar Cookie si es nuevo
