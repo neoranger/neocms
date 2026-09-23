@@ -1,0 +1,15 @@
+:root{--bg-main:#f1f5f9;--bg-surface:rgba(255,255,255,.9);--text-primary:#0f172a;--text-secondary:#475569;--text-muted:#94a3b8;--border-color:rgba(0,0,0,.12);--accent-primary:#059669;--accent-secondary:#047857;--card-shadow:0 8px 24px rgba(15,23,42,.08);}
+body{background-image:none;background-color:var(--bg-main);}
+/* Navbar y footer: fondos claros en vez del rgba oscuro hardcodeado */
+body > header{--header-bg:rgba(255,255,255,.85);}
+body > header[style]{background-color:rgba(255,255,255,.85) !important;}
+body > footer[style]{background-color:rgba(255,255,255,.7) !important;}
+/* Inputs y búsqueda legibles en claro */
+input[type="text"],input[type="date"],input[type="password"],input[type="url"],input[type="file"],textarea,select{background:#ffffff !important;color:var(--text-primary) !important;border:1px solid var(--border-color) !important;}
+input:focus,textarea:focus,select:focus{background:#ffffff !important;color:var(--text-primary) !important;border-color:var(--accent-primary) !important;box-shadow:0 0 0 3px rgba(5,150,105,.15) !important;}
+input::placeholder,textarea::placeholder{color:var(--text-muted) !important;}
+/* Badges y pills que usaban blanco translúcido sobre oscuro */
+a[style*="rgba(255,255,255"]{background:rgba(15,23,42,.04) !important;}
+span[style*="rgba(255,255,255"]{background:rgba(15,23,42,.06) !important;}
+/* Cards con blur oscuro -> superficie clara */
+.card{background:var(--bg-surface) !important;}

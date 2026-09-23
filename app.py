@@ -415,11 +415,21 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Configuración de tema
-@app.before_request
-def load_theme():
-    # identify_user() ya se ejecuta antes, esto es solo para el tema
-    pass
+@app.context_processor
+def inject_theme():
+    try: cfg = get_config()
+    except: cfg = DEFAULT_CONFIG
+    try:
+        os.makedirs(PAGES_DIR, exist_ok=True)
+        nav = []
+        for fn in sorted(os.listdir(PAGES_DIR)):
+            if fn.startswith('draft_') or not fn.endswith('.md'): continue
+            try:
+                m = frontmatter.load(os.path.join(PAGES_DIR, fn)).metadata
+                nav.append({'slug': fn[:-3], 'title': m.get('title', fn[:-3])}) if m.get('show_in_nav', True) else None
+            except: pass
+    except: nav = []
+    return {'site_config': cfg, 'active_theme': valid_theme(cfg.get('theme', 'default')), 'nav_pages': nav}
 
 def _check_admin_password(attempt):
     """Valida la contraseña. Soporta hash (werkzeug/bcrypt) y texto claro,
@@ -970,17 +980,183 @@ def toggle_comments():
         
     return redirect(url_for('admin_list'))
 
+DEFAULT_CONFIG = {'comments_enabled': True, 'site_title': 'NeoSite Blog', 'theme': 'default', 'theme_vars': {}, 'banner': 'banner.png', 'nav_links': [], 'custom_css': ''}
+THEMES_DIR = os.path.join(BASE_DIR, 'static', 'themes')
+PAGES_DIR = os.path.join(BASE_DIR, 'content', 'pages')
+
 def get_config():
-    config_path = 'config.json'
-    default_config = {'comments_enabled': True}
-    if not os.path.exists(config_path): return default_config
+    config_path = os.path.join(BASE_DIR, 'config.json')
+    cfg = dict(DEFAULT_CONFIG)
+    if not os.path.exists(config_path): return cfg
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             content = f.read().strip()
-            if not content: return default_config
-            return json.loads(content)
+            if not content: return cfg
+            loaded = json.loads(content)
+            if isinstance(loaded, dict): cfg.update(loaded)
+            return cfg
     except:
-        return default_config
+        return cfg
+
+def save_config(cfg):
+    config_path = os.path.join(BASE_DIR, 'config.json')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+
+def list_themes():
+    themes = []
+    if not os.path.isdir(THEMES_DIR): return ['default']
+    for name in sorted(os.listdir(THEMES_DIR)):
+        full = os.path.join(THEMES_DIR, name)
+        if os.path.isdir(full) and os.path.exists(os.path.join(full, 'theme.css')):
+            meta = {'name': name}
+            tj = os.path.join(full, 'theme.json')
+            if os.path.exists(tj):
+                try: meta.update(json.load(open(tj, encoding='utf-8')))
+                except: pass
+            themes.append(meta)
+    return themes or [{'name': 'default'}]
+
+def valid_theme(name):
+    if not name: return 'default'
+    name = re.sub(r'[^a-zA-Z0-9_-]', '', str(name))
+    if os.path.exists(os.path.join(THEMES_DIR, name, 'theme.css')): return name
+    return 'default'
+
+def sanitize_css(css):
+    if not css: return ''
+    low = css.lower()
+    for bad in ['expression(', 'javascript:', '@import', 'behavior:', '-moz-binding']:
+        if bad in low: return ''
+    if len(css) > 20000: return css[:20000]
+    return css
+
+def theme_vars_to_css(vars_dict):
+    if not vars_dict: return ''
+    lines = [':root{']
+    for k, v in vars_dict.items():
+        kk = re.sub(r'[^a-z0-9-]', '', str(k).lower())[:30]
+        vv = str(v).strip()[:50]
+        if not re.match(r'^#[0-9a-fA-F]{3,8}$', vv) and not re.match(r'^[a-z]+$', vv): continue
+        lines.append(f'--{kk}:{vv};')
+    lines.append('}')
+    return '\n'.join(lines)
+
+def get_pages():
+    pages = []
+    os.makedirs(PAGES_DIR, exist_ok=True)
+    for fn in os.listdir(PAGES_DIR):
+        if fn.endswith('.md'):
+            try:
+                post = frontmatter.load(os.path.join(PAGES_DIR, fn))
+                m = dict(post.metadata); m['slug'] = fn[:-3]
+                pages.append(m)
+            except: pass
+    return sorted(pages, key=lambda x: str(x.get('title','')))
+
+
+# --- PÁGINAS (editor markdown, igual que posts) ---
+@app.route('/p/<slug>')
+def page_view(slug):
+    slug = safe_slug(slug)
+    path = os.path.join(PAGES_DIR, f"{slug}.md")
+    if not os.path.exists(path): abort(404)
+    pg = frontmatter.load(path)
+    content_html = sanitize_html(markdown(pg.content, extensions=['tables', 'fenced_code', 'nl2br']))
+    return render_template('page.html', page=pg.metadata, content=content_html, slug=slug)
+
+@app.route('/admin/pages')
+@login_required
+def admin_pages():
+    return render_template('admin_pages.html', pages=get_pages())
+
+@app.route('/admin/pages/new', methods=['GET', 'POST'], defaults={'slug': None})
+@app.route('/admin/pages/edit/<slug>', methods=['GET', 'POST'])
+@login_required
+def edit_page(slug):
+    if slug: slug = safe_slug(slug)
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip() or 'Sin título'
+        content = request.form.get('content', '')
+        new_slug = safe_slug(request.form.get('slug') or (slug.replace('draft_', '') if slug else slugify(title))) or 'pagina'
+        status = request.form.get('status', 'published')
+        description = request.form.get('description', '').strip()[:300]
+        show_in_nav = request.form.get('show_in_nav', '1') == '1'
+        os.makedirs(PAGES_DIR, exist_ok=True)
+        fname = f"draft_{new_slug}.md" if status == 'draft' else f"{new_slug}.md"
+        new_path = os.path.join(PAGES_DIR, fname)
+        if slug:
+            for cand in (f"{slug}.md", f"draft_{slug}.md"):
+                old = os.path.join(PAGES_DIR, cand)
+                if old != new_path and os.path.exists(old): os.remove(old)
+        pf = frontmatter.Post(content)
+        pf.metadata.update({'title': title, 'status': status, 'description': description, 'show_in_nav': show_in_nav})
+        with open(new_path, 'wb') as f: frontmatter.dump(pf, f)
+        return redirect(url_for('admin_pages'))
+    data = {'title': '', 'content': '', 'slug': '', 'status': 'published', 'description': '', 'show_in_nav': True}
+    if slug:
+        for cand in (f"{slug}.md", f"draft_{slug}.md"):
+            path = os.path.join(PAGES_DIR, cand)
+            if os.path.exists(path):
+                pg = frontmatter.load(path)
+                data = {'title': pg.metadata.get('title',''), 'content': pg.content,
+                        'slug': slug.replace('draft_',''),
+                        'status': 'draft' if cand.startswith('draft_') else 'published',
+                        'description': pg.metadata.get('description',''),
+                        'show_in_nav': pg.metadata.get('show_in_nav', True)}
+                break
+    return render_template('page_builder.html', page=data)
+
+@app.route('/admin/pages/delete/<slug>', methods=['POST'])
+@login_required
+def delete_page(slug):
+    slug = safe_slug(slug)
+    for cand in (f"{slug}.md", f"draft_{slug}.md"):
+        path = os.path.join(PAGES_DIR, cand)
+        if os.path.exists(path): os.remove(path)
+    return redirect(url_for('admin_pages'))
+
+# --- APARIENCIA / TEMAS ---
+@app.route('/admin/apariencia', methods=['GET', 'POST'])
+@login_required
+def appearance():
+    cfg = get_config()
+    if request.method == 'POST':
+        action = request.form.get('action', 'theme')
+        if action == 'theme':
+            cfg['theme'] = valid_theme(request.form.get('theme'))
+            cfg['site_title'] = request.form.get('site_title', cfg.get('site_title',''))[:80]
+            cfg['banner'] = re.sub(r'[^a-zA-Z0-9._-]', '', request.form.get('banner','banner.png') or 'banner.png')[:100]
+            vars_dict = {}
+            for k in ('accent-primary', 'bg-main', 'text-primary'):
+                v = request.form.get(f'var_{k}', '').strip()[:20]
+                if re.match(r'^#[0-9a-fA-F]{3,8}$', v): vars_dict[k] = v
+            cfg['theme_vars'] = vars_dict
+            try:
+                links = json.loads(request.form.get('nav_links_json', '[]'))
+                clean_links = []
+                for l in links[:10]:
+                    if isinstance(l, dict) and l.get('label') and l.get('url'):
+                        clean_links.append({'label': str(l['label'])[:30], 'url': str(l['url'])[:200]})
+                cfg['nav_links'] = clean_links
+            except: pass
+            # override.css con variables
+            ov = os.path.join(THEMES_DIR, cfg['theme'], 'override.css')
+            try:
+                with open(ov, 'w', encoding='utf-8') as f: f.write(theme_vars_to_css(vars_dict))
+            except: pass
+        elif action == 'css':
+            css = sanitize_css(request.form.get('custom_css', ''))
+            if css or not request.form.get('custom_css'):
+                cfg['custom_css'] = css
+                cc = os.path.join(THEMES_DIR, cfg['theme'], 'custom.css')
+                try:
+                    with open(cc, 'w', encoding='utf-8') as f: f.write(css)
+                except: pass
+        save_config(cfg)
+        return redirect(url_for('appearance'))
+    themes = list_themes()
+    return render_template('appearance.html', cfg=cfg, themes=themes)
 
 if __name__ == '__main__':
     # DEBUG solo si se pide explícitamente (NUNCA en producción)

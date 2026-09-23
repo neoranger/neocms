@@ -1,0 +1,9 @@
+{
+  "label": "Oscuro Neo",
+  "description": "Tema actual",
+  "vars": [
+    "accent-primary",
+    "bg-main",
+    "text-primary"
+  ]
+}

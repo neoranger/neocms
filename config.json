@@ -1,3 +1,13 @@
 {
-    "comments_enabled": true
+  "comments_enabled": true,
+  "site_title": "NeoSite Blog",
+  "theme": "default",
+  "theme_vars": {
+    "accent-primary": "#10b981",
+    "bg-main": "#080c14",
+    "text-primary": "#f8fafc"
+  },
+  "banner": "banner.png",
+  "nav_links": [],
+  "custom_css": ""
 }

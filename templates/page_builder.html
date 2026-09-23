@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Editar página | {{ page.title or "Nueva" }}{% endblock %}
+
+{% block head %}
+    <!-- EasyMDE CSS & JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    
+    <style>
+        .editor-workspace {
+            display: flex;
+            flex-direction: column;
+            margin-top: 15px;
+            margin-bottom: 30px;
+        }
+
+        /* Barra de Herramientas de Metadatos */
+        .meta-toolbar {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .meta-input {
+            background: rgba(10, 15, 30, 0.8) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            font-size: 0.85rem !important;
+            margin-bottom: 0 !important;
+        }
+
+        .title-input {
+            flex-grow: 1;
+            font-size: 1.3rem !important;
+            font-weight: 800 !important;
+            font-family: var(--font-head) !important;
+            background: transparent !important;
+            border: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+            border-radius: 0 !important;
+            margin-bottom: 0 !important;
+            padding: 8px 0 !important;
+        }
+        .title-input:focus { 
+            outline: none !important; 
+            border-bottom-color: var(--accent-primary) !important;
+            box-shadow: none !important; 
+        }
+
+        .editor-meta-strip {
+            background: rgba(15, 22, 42, 0.4);
+            padding: 10px 20px;
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            gap: 12px;
+            font-size: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Personalización de EasyMDE para el Tema Oscuro */
+        .editor-toolbar {
+            background: var(--bg-surface) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 0 !important;
+            border-left: 1px solid var(--border-color) !important;
+            border-right: 1px solid var(--border-color) !important;
+            opacity: 1 !important;
+        }
+
+        .editor-toolbar button {
+            color: var(--text-secondary) !important;
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .editor-toolbar button:hover, 
+        .editor-toolbar button.active {
+            color: var(--text-primary) !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .editor-toolbar i {
+            color: inherit !important;
+        }
+
+        .editor-toolbar button.active {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: rgba(16, 185, 129, 0.3) !important;
+            color: var(--accent-primary) !important;
+        }
+
+        .CodeMirror {
+            background: rgba(5, 8, 15, 0.95) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 0 0 12px 12px !important;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+            font-size: 1.05rem !important;
+            line-height: 1.6 !important;
+            height: 55vh !important;
+        }
+
+        .CodeMirror-cursor {
+            border-left: 2px solid var(--accent-primary) !important;
+        }
+
+        .editor-preview-active, 
+        .editor-preview-side {
+            background: rgba(10, 15, 30, 0.98) !important;
+            color: var(--text-secondary) !important;
+        }
+
+        .editor-preview-side {
+            border-left: 1px solid var(--border-color) !important;
+        }
+
+        .editor-preview img, 
+        .editor-preview-side img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .editor-statusbar {
+            color: var(--text-muted) !important;
+            padding: 8px 12px !important;
+            font-size: 0.8rem !important;
+        }
+
+        .editor-statusbar .words::before {
+            content: " palabras: ";
+        }
+
+        .editor-statusbar .lines::before {
+            content: " líneas: ";
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    
+    <div style="margin-bottom: 15px; margin-top: 15px;">
+        <a href="{{ url_for('admin_pages') }}" style="color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-arrow-left-long"></i> Volver a Páginas
+        </a>
+    </div>
+
+    <form method="POST" class="editor-workspace" id="editor-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Barra de Metadatos superior -->
+        <div class="meta-toolbar">
+            <input type="text" name="title" value="{{ page.title }}" placeholder="Título de la página..." required class="title-input">
+            
+            <select name="status" class="meta-input" style="font-weight: 700; width: 130px;">
+                <option value="published" {% if page.status == 'published' %}selected{% endif %}>🚀 Público</option>
+                <option value="draft" {% if page.status == 'draft' %}selected{% endif %}>📝 Borrador</option>
+            </select>
+
+            <button type="button" class="btn btn-secondary" style="padding: 8px 16px; border-radius: 8px;" onclick="document.getElementById('file-uploader').click()">
+                <i class="fa-regular fa-image" style="color: var(--accent-primary);"></i> Media
+            </button>
+            
+            <button type="submit" class="btn" style="padding: 8px 20px; border-radius: 8px;">
+                <i class="fa-regular fa-floppy-disk"></i> Guardar
+            </button>
+        </div>
+        
+        <div class="editor-meta-strip">
+            <input type="text" name="description" value="{{ page.description }}" placeholder="Descripción SEO..." class="meta-input" style="flex-grow: 2;">
+            <input type="text" name="slug" value="{{ page.slug }}" placeholder="slug-url" class="meta-input" style="width: 150px;">
+            <label style="font-size:0.8rem;color:var(--text-secondary)"><input type="checkbox" name="show_in_nav" value="1" {% if page.show_in_nav %}checked{% endif %}> En navbar</label>
+        </div>
+
+        <!-- Textarea que EasyMDE convertirá -->
+        <div style="position: relative;">
+            <textarea name="content" id="markdown-input" placeholder="Escribe tu página aquí...">{{ page.content }}</textarea>
+        </div>
+
+        <input type="file" id="file-uploader" style="display: none;">
+        <span id="upload-status" style="position: fixed; bottom: 20px; right: 20px; background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; display: none; box-shadow: var(--card-shadow); z-index: 1000;"></span>
+
+    </form>  
+
+    <script>
+        // Inicializar EasyMDE
+        const easyMDE = new EasyMDE({
+            element: document.getElementById('markdown-input'),
+            autoDownloadFontAwesome: false,
+            spellChecker: false,
+            placeholder: "Escribe tu artículo aquí en formato Markdown...",
+            status: ["lines", "words", "cursor"],
+            tabSize: 4,
+            renderingConfig: {
+                singleLineBreaks: false,
+                codeSyntaxHighlighting: true
+            },
+            toolbar: [
+                "bold", "italic", "strikethrough", "heading", "|",
+                "quote", "code", "unordered-list", "ordered-list", "|",
+                "link", "image", "table", "horizontal-rule", "|",
+                "preview", "side-by-side", "fullscreen", "|",
+                "guide"
+            ]
+        });
+
+        // Manejador del subidor de archivos multimedia
+        const fileUploader = document.getElementById('file-uploader');
+        const status = document.getElementById('upload-status');
+
+        fileUploader.addEventListener('change', async () => {
+            const file = fileUploader.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            status.style.display = 'block';
+            status.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: var(--accent-primary); margin-right: 6px;"></i> Subiendo...';
+
+            try {
+                const csrfToken = document.querySelector('#editor-form input[name="csrf_token"]').value;
+                const response = await fetch('/admin/upload', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    let code = `![img](${data.url})`;
+                    if (file.type.includes('audio')) code = `<audio controls src="${data.url}"></audio>`;
+                    if (file.type.includes('video')) code = `<video controls width="100%" src="${data.url}"></video>`;
+
+                    // Insertar el elemento multimedia en la posición actual del cursor de EasyMDE
+                    const pos = easyMDE.codemirror.getCursor();
+                    easyMDE.codemirror.replaceRange("\n" + code + "\n", pos);
+                    
+                    status.innerHTML = '<i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 6px;"></i> Subido con éxito';
+                    setTimeout(() => status.style.display = 'none', 2000);
+                } else {
+                    status.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger); margin-right: 6px;"></i> Error al subir';
+                    setTimeout(() => status.style.display = 'none', 3000);
+                }
+            } catch (err) { 
+                console.error(err);
+                status.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--danger); margin-right: 6px;"></i> Error de red';
+                setTimeout(() => status.style.display = 'none', 3000);
+            }
+        });
+    </script>
+{% endblock %}

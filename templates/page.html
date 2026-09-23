@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} | {{ site_config.get('site_title','') }}{% endblock %}
+{% block content %}
+<nav style="margin:20px 0"><a href="{{ url_for('index') }}"><i class="fa-solid fa-arrow-left-long"></i> Volver al inicio</a></nav>
+<article class="card" style="padding:40px">
+  <h1 style="font-family:var(--font-head);font-weight:800;font-size:2.4rem;margin:0 0 10px 0">{{ page.title }}</h1>
+  {% if page.description %}<p style="color:var(--text-muted)">{{ page.description }}</p>{% endif %}
+  <div class="content" style="color:var(--text-secondary);line-height:1.8;font-size:1.05rem">{{ content|safe }}</div>
+</article>
+{% endblock %}
