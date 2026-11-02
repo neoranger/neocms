@@ -1127,6 +1127,21 @@ def delete_page(slug):
     return redirect(url_for('admin_pages'))
 
 # --- APARIENCIA / TEMAS ---
+@app.route('/theme/generated.css')
+def theme_generated_css():
+    """CSS generado desde config.json (colores y CSS personalizado).
+
+    Se sirve dinámicamente para que funcione también con el contenedor
+    read-only de producción, donde static/themes no es escribible.
+    """
+    cfg = get_config()
+    parts = [
+        theme_vars_to_css(cfg.get('theme_vars') or {}),
+        sanitize_css(cfg.get('custom_css') or '')
+    ]
+    css = "\n".join(part for part in parts if part)
+    return Response(css, mimetype='text/css', headers={'Cache-Control': 'no-store'})
+
 @app.route('/admin/apariencia', methods=['GET', 'POST'])
 @login_required
 def appearance():
@@ -1150,19 +1165,10 @@ def appearance():
                         clean_links.append({'label': str(l['label'])[:30], 'url': str(l['url'])[:200]})
                 cfg['nav_links'] = clean_links
             except: pass
-            # override.css con variables
-            ov = os.path.join(THEMES_DIR, cfg['theme'], 'override.css')
-            try:
-                with open(ov, 'w', encoding='utf-8') as f: f.write(theme_vars_to_css(vars_dict))
-            except: pass
         elif action == 'css':
             css = sanitize_css(request.form.get('custom_css', ''))
             if css or not request.form.get('custom_css'):
                 cfg['custom_css'] = css
-                cc = os.path.join(THEMES_DIR, cfg['theme'], 'custom.css')
-                try:
-                    with open(cc, 'w', encoding='utf-8') as f: f.write(css)
-                except: pass
         save_config(cfg)
         return redirect(url_for('appearance'))
     themes = list_themes()

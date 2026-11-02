@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + active_theme + '/theme.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + active_theme + '/override.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + active_theme + '/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('theme_generated_css') }}">
     <link rel="alternate" type="application/rss+xml" title="NeoSite Blog" href="{{ url_for('rss') }}">
     {% block head %}{% endblock %}
 </head>
