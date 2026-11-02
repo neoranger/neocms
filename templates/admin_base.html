@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block body_class %}admin-body{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    {% block admin_head %}{% endblock %}
+{% endblock %}
+
+{% block body %}
+{% set ep = request.endpoint or '' %}
+{% set is_posts = ep in ['admin_posts', 'edit_post'] %}
+{% set is_pages = ep in ['admin_pages', 'edit_page'] %}
+
+<div class="admin-shell">
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Menú de administración">
+        <div class="admin-sidebar__brand">
+            <a href="{{ url_for('admin_list') }}" class="admin-brand">
+                <span class="admin-brand__icon"><i class="fa-solid fa-code"></i></span>
+                <span class="admin-brand__text">NeoSite <strong>Admin</strong></span>
+            </a>
+        </div>
+
+        <div class="admin-sidebar__new">
+            <a href="{{ url_for('edit_post') }}" class="btn admin-new-post">
+                <i class="fa-solid fa-circle-plus"></i> Nueva entrada
+            </a>
+        </div>
+
+        <nav class="admin-nav">
+            <span class="admin-nav__label">Principal</span>
+            <a href="{{ url_for('admin_list') }}" class="admin-nav__link {% if ep == 'admin_list' %}is-active{% endif %}" {% if ep == 'admin_list' %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-gauge-high"></i> <span>Escritorio</span>
+            </a>
+            <a href="{{ url_for('admin_posts') }}" class="admin-nav__link {% if is_posts %}is-active{% endif %}" {% if is_posts %}aria-current="page"{% endif %}>
+                <i class="fa-regular fa-file-lines"></i> <span>Entradas</span>
+            </a>
+            <a href="{{ url_for('admin_pages') }}" class="admin-nav__link {% if is_pages %}is-active{% endif %}" {% if is_pages %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-file-lines"></i> <span>Páginas</span>
+            </a>
+
+            <span class="admin-nav__label">Comunidad</span>
+            <a href="{{ url_for('admin_comments') }}" class="admin-nav__link {% if ep == 'admin_comments' %}is-active{% endif %}" {% if ep == 'admin_comments' %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-comments"></i> <span>Comentarios</span>
+            </a>
+
+            <span class="admin-nav__label">Diseño</span>
+            <a href="{{ url_for('appearance') }}" class="admin-nav__link {% if ep == 'appearance' %}is-active{% endif %}" {% if ep == 'appearance' %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-palette"></i> <span>Apariencia</span>
+            </a>
+
+            <span class="admin-nav__label">Analítica</span>
+            <a href="{{ url_for('full_stats') }}" class="admin-nav__link {% if ep == 'full_stats' %}is-active{% endif %}" {% if ep == 'full_stats' %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-chart-line"></i> <span>Estadísticas</span>
+            </a>
+
+            <span class="admin-nav__label">Herramientas</span>
+            <a href="{{ url_for('backup') }}" class="admin-nav__link">
+                <i class="fa-solid fa-file-zipper"></i> <span>Backup ZIP</span>
+            </a>
+            <a href="{{ url_for('export_stats') }}" class="admin-nav__link">
+                <i class="fa-solid fa-file-csv"></i> <span>Exportar CSV</span>
+            </a>
+        </nav>
+
+        <div class="admin-sidebar__footer">
+            <span class="admin-session"><span class="admin-session__dot"></span> Sesión activa</span>
+            <a href="{{ url_for('index') }}" class="admin-sidebar__utility" target="_blank" rel="noopener">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver sitio
+            </a>
+            <a href="{{ url_for('logout') }}" class="admin-sidebar__utility admin-sidebar__utility--danger">
+                <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+            </a>
+        </div>
+    </aside>
+
+    <div class="admin-workspace">
+        <header class="admin-topbar">
+            <button type="button" class="admin-menu-toggle" aria-label="Abrir menú" aria-controls="admin-sidebar" aria-expanded="false">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="admin-topbar__title">
+                <span class="admin-topbar__eyebrow">{% block admin_eyebrow %}Administración{% endblock %}</span>
+                <h1>{% block admin_title %}Panel{% endblock %}</h1>
+            </div>
+            <div class="admin-topbar__actions">
+                <a href="{{ url_for('edit_post') }}" class="btn admin-topbar__new">
+                    <i class="fa-solid fa-plus"></i> <span>Nueva entrada</span>
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary admin-topbar__site" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Ver sitio</span>
+                </a>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <div class="admin-overlay" data-admin-close hidden></div>
+</div>
+
+<script>
+    (function () {
+        const sidebar = document.getElementById('admin-sidebar');
+        const toggle = document.querySelector('.admin-menu-toggle');
+        const overlay = document.querySelector('.admin-overlay');
+        if (!sidebar || !toggle || !overlay) return;
+
+        const mobileQuery = window.matchMedia('(max-width: 992px)');
+
+        function openMenu() {
+            sidebar.classList.add('is-open');
+            overlay.hidden = false;
+            overlay.classList.add('is-visible');
+            document.body.classList.add('admin-nav-open');
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('aria-label', 'Cerrar menú');
+        }
+
+        function closeMenu() {
+            sidebar.classList.remove('is-open');
+            overlay.classList.remove('is-visible');
+            overlay.hidden = true;
+            document.body.classList.remove('admin-nav-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Abrir menú');
+        }
+
+        toggle.addEventListener('click', function () {
+            if (sidebar.classList.contains('is-open')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        overlay.addEventListener('click', closeMenu);
+
+        sidebar.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (mobileQuery.matches) closeMenu();
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && sidebar.classList.contains('is-open')) {
+                closeMenu();
+            }
+        });
+
+        mobileQuery.addEventListener('change', function (event) {
+            if (!event.matches) closeMenu();
+        });
+    })();
+</script>
+{% endblock %}

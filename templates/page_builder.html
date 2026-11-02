@@ -1,7 +1,9 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Editar página | {{ page.title or "Nueva" }}{% endblock %}
+{% block admin_eyebrow %}Páginas{% endblock %}
+{% block admin_title %}{{ page.title or "Nueva página" }}{% endblock %}
 
-{% block head %}
+{% block admin_head %}
     <!-- EasyMDE CSS & JS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -153,9 +155,9 @@
 
 {% block content %}
     
-    <div style="margin-bottom: 15px; margin-top: 15px;">
-        <a href="{{ url_for('admin_pages') }}" style="color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-arrow-left-long"></i> Volver a Páginas
+    <div class="admin-page-head">
+        <a href="{{ url_for('admin_pages') }}" class="admin-back-link">
+            <i class="fa-solid fa-arrow-left-long"></i> Volver a páginas
         </a>
     </div>
 

@@ -1,8 +1,69 @@
-{% extends "base.html" %}{% block title %}Páginas | Admin{% endblock %}{% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0"><h2>Páginas</h2><div><a class="btn" href="{{ url_for('edit_page') }}">+ Nueva página</a> <a class="btn btn-secondary" href="{{ url_for('admin_list') }}">Dashboard</a></div></div>
-<table><thead><tr><th>Título</th><th>Slug</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
-{% for p in pages %}<tr><td>{{ p.title }}</td><td>/p/{{ p.slug }}</td><td>{{ p.status }}</td>
-<td><a href="{{ url_for('edit_page', slug=p.slug) }}">Editar</a> | <a href="/p/{{ p.slug }}" target="_blank">Ver</a>
-<form action="{{ url_for('delete_page', slug=p.slug) }}" method="POST" style="display:inline" onsubmit="return confirm('Eliminar?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button style="background:none;border:none;color:var(--danger);cursor:pointer">Eliminar</button></form></td></tr>
-{% else %}<tr><td colspan="4">Sin páginas.</td></tr>{% endfor %}
-</tbody></table>{% endblock %}
+{% extends "admin_base.html" %}
+
+{% block title %}Páginas | NeoSite Blog{% endblock %}
+{% block admin_eyebrow %}Contenido{% endblock %}
+{% block admin_title %}Páginas{% endblock %}
+
+{% block content %}
+    <div class="admin-page-head">
+        <div>
+            <h2>Todas las páginas</h2>
+            <p>Páginas independientes del blog, como “Acerca de” o “Contacto”.</p>
+        </div>
+        <div class="admin-page-actions">
+            <a href="{{ url_for('edit_page') }}" class="btn">
+                <i class="fa-solid fa-circle-plus"></i> Nueva página
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Slug</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pages %}
+                <tr>
+                    <td><strong style="color: var(--text-primary); font-size: 0.95rem;">{{ p.title }}</strong></td>
+                    <td><span class="admin-code">/p/{{ p.slug }}</span></td>
+                    <td>
+                        {% if p.slug.startswith('draft_') or p.status == 'draft' %}
+                            <span class="admin-badge admin-badge--warning"><i class="fa-solid fa-pen-ruler"></i> Borrador</span>
+                        {% else %}
+                            <span class="admin-badge admin-badge--success"><i class="fa-solid fa-circle-check"></i> Público</span>
+                        {% endif %}
+                    </td>
+                    <td class="admin-actions">
+                        <a href="{{ url_for('edit_page', slug=p.slug) }}" class="admin-inline-action">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                        </a>
+                        {% if not p.slug.startswith('draft_') %}
+                        <a href="/p/{{ p.slug }}" class="admin-inline-action" target="_blank" rel="noopener">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver
+                        </a>
+                        {% endif %}
+                        <form action="{{ url_for('delete_page', slug=p.slug) }}" method="POST" onsubmit="return confirm('¿Eliminar esta página?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="admin-inline-action admin-inline-action--danger">
+                                <i class="fa-regular fa-trash-can"></i> Eliminar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="padding: 44px; text-align: center; color: var(--text-muted); font-style: italic;">
+                        Sin páginas todavía. <a href="{{ url_for('edit_page') }}" style="color: var(--accent-primary); font-weight: 600;">Creá la primera</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

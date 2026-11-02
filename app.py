@@ -20,7 +20,7 @@ import requests
 from collections import Counter
 import pyotp
 import qrcode
-from io import BytesIO
+from io import StringIO
 import base64
 import bleach
 from flask_wtf import CSRFProtect
@@ -693,6 +693,11 @@ def admin_list():
                            comments_on=comments_on,
                            total_visits=total_visits)
 
+@app.route('/admin/posts')
+@login_required
+def admin_posts():
+    return render_template('admin_posts.html', posts=get_posts())
+
 @app.route('/admin/edit/<slug>', methods=['GET', 'POST'])
 @app.route('/admin/new', methods=['GET', 'POST'], defaults={'slug': None})
 @login_required
@@ -736,7 +741,7 @@ def edit_post(slug):
         with open(new_path, 'wb') as f:
             frontmatter.dump(post_file, f)
 
-        return redirect(url_for('admin_list'))
+        return redirect(url_for('admin_posts'))
 
     post_data = {
         "title": "", "content": "", "category": "", 
@@ -763,7 +768,7 @@ def edit_post(slug):
 @app.route('/admin/save', methods=['POST'])
 def save_post():
     # Ruta auxiliar legacy, por si acaso
-    return redirect('/admin')
+    return redirect('/admin/posts')
 
 @app.route('/admin/delete/<slug>', methods=['POST'])
 @login_required
@@ -772,7 +777,7 @@ def delete_post(slug):
     path = os.path.join(CONTENT_DIR, f"{slug}.md")
     if os.path.exists(path):
         os.remove(path)
-    return redirect(url_for('admin_list'))
+    return redirect(url_for('admin_posts'))
 
 @app.route('/admin/upload', methods=['POST'])
 @login_required
@@ -856,26 +861,31 @@ def export_stats():
     if not os.path.exists(DB_FILE):
         return "No stats yet"
 
-    buffer = BytesIO()
+    buffer = StringIO(newline='')
+    conn = None
     try:
         conn = sqlite3.connect(DB_FILE)
         rows = conn.execute(
             "SELECT timestamp, user_id, action, detail, os, location, ip "
             "FROM visits ORDER BY timestamp"
         ).fetchall()
-        conn.close()
         writer = csv.writer(buffer)
         writer.writerow(["Timestamp", "User_ID", "Action", "Detail", "OS", "Location", "IP"])
         writer.writerows(rows)
     except Exception as e:
         print(f"Error exportando stats: {e}")
-        return "Error exportando stats"
+        return "Error exportando stats", 500
+    finally:
+        if conn is not None:
+            conn.close()
 
-    buffer.seek(0)
+    # utf-8-sig agrega BOM para que Excel reconozca acentos correctamente.
+    contenido = buffer.getvalue().encode('utf-8-sig')
+    filename = f"stats-{datetime.now().strftime('%Y-%m-%d')}.csv"
     return Response(
-        buffer.getvalue(),
+        contenido,
         mimetype='text/csv',
-        headers={"Content-Disposition": "attachment; filename=stats.csv"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
      
 @app.route('/admin/stats')

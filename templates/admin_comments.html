@@ -1,63 +1,72 @@
-{% extends "base.html" %}
-{% block title %}Moderación de Comentarios | NeoSite Blog{% endblock %}
+{% extends "admin_base.html" %}
 
-{% block head %}
-    <!-- style.css ya se incluye en base.html -->
-{% endblock %}
+{% block title %}Comentarios | NeoSite Blog{% endblock %}
+{% block admin_eyebrow %}Comunidad{% endblock %}
+{% block admin_title %}Comentarios{% endblock %}
 
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; margin-bottom: 30px; border-bottom: 1px solid var(--border-color);">
-        <h2 style="margin: 0; font-family: var(--font-head); font-weight: 800; font-size: 1.8rem; color: var(--text-primary);">
-            <i class="fa-solid fa-comments" style="color: var(--accent-primary); margin-right: 8px;"></i>Moderación de Comentarios
-        </h2>
-        <a href="{{ url_for('admin_list') }}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver al panel</a>
+    {% set ns = namespace(pending=0) %}
+    {% for c in comments %}
+        {% if not c.approved %}{% set ns.pending = ns.pending + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="admin-page-head">
+        <div>
+            <h2>Moderación de comentarios</h2>
+            <p>{{ comments|length }} {{ 'comentario' if comments|length == 1 else 'comentarios' }} en total · {{ ns.pending }} pendiente{{ '' if ns.pending == 1 else 's' }} de aprobación.</p>
+        </div>
+        <div class="admin-page-actions">
+            <a href="{{ url_for('admin_list') }}" class="btn btn-secondary">
+                <i class="fa-solid fa-gauge-high"></i> Ir al escritorio
+            </a>
+        </div>
     </div>
-    
-    <table style="margin-bottom: 50px;">
-        <thead>
-            <tr>
-                <th>Post</th>
-                <th>Autor</th>
-                <th>Comentario</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for c in comments %}
-            <tr>
-                <td><code style="background: rgba(255,255,255,0.03); color: var(--text-secondary); padding: 4px 8px; border-radius: 6px; font-family: monospace;">{{ c.slug }}</code></td>
-                <td><strong style="color: var(--accent-primary);">@{{ c.author }}</strong></td>
-                <td style="color: var(--text-secondary); max-width: 300px; word-break: break-word;">{{ c.text }}</td>
-                <td>
-                    {% if c.approved %}
-                        <span class="badge badge-success" style="text-transform: uppercase; font-size: 0.7rem;"><i class="fa-solid fa-circle-check"></i> Aprobado</span>
-                    {% else %}
-                        <span class="badge badge-warning" style="text-transform: uppercase; font-size: 0.7rem; color: #f59e0b; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);"><i class="fa-solid fa-clock"></i> Pendiente</span>
-                    {% endif %}
-                </td>
-                <td style="display: flex; gap: 10px; align-items: center; border-bottom: none;">
-                    {% if not c.approved %}
-                        <a href="{{ url_for('approve_comment', slug=c.slug, comment_id=c.id) }}" class="btn" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;">
-                            <i class="fa-solid fa-check"></i> Aprobar
+
+    <div class="admin-table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Post</th>
+                    <th>Autor</th>
+                    <th>Comentario</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in comments %}
+                <tr>
+                    <td><span class="admin-code">{{ c.slug }}</span></td>
+                    <td><strong style="color: var(--accent-primary);">@{{ c.author }}</strong></td>
+                    <td class="admin-cell-wrap" style="color: var(--text-secondary);">{{ c.text }}</td>
+                    <td>
+                        {% if c.approved %}
+                            <span class="admin-badge admin-badge--success"><i class="fa-solid fa-circle-check"></i> Aprobado</span>
+                        {% else %}
+                            <span class="admin-badge admin-badge--warning"><i class="fa-solid fa-clock"></i> Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td class="admin-actions">
+                        {% if not c.approved %}
+                            <a href="{{ url_for('approve_comment', slug=c.slug, comment_id=c.id) }}" class="admin-inline-action">
+                                <i class="fa-solid fa-check"></i> Aprobar
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('delete_comment', slug=c.slug, comment_id=c.id) }}"
+                           class="admin-inline-action admin-inline-action--danger"
+                           onclick="return confirm('¿Estás seguro de que quieres eliminar este comentario?')">
+                            <i class="fa-regular fa-trash-can"></i> Eliminar
                         </a>
-                    {% endif %}
-    
-                    <a href="{{ url_for('delete_comment', slug=c.slug, comment_id=c.id) }}" 
-                        class="btn btn-danger" 
-                        style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px;"
-                        onclick="return confirm('¿Estás seguro de que quieres eliminar este comentario?')">
-                        <i class="fa-regular fa-trash-can"></i> Eliminar
-                    </a>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5" style="padding: 40px; text-align: center; color: var(--text-muted); font-style: italic;">
-                    No hay comentarios para moderar.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 44px; text-align: center; color: var(--text-muted); font-style: italic;">
+                        No hay comentarios para moderar.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}

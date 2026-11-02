@@ -20,8 +20,8 @@
     <link rel="alternate" type="application/rss+xml" title="NeoSite Blog" href="{{ url_for('rss') }}">
     {% block head %}{% endblock %}
 </head>
-<body>
-    
+<body class="{% block body_class %}{% endblock %}">
+    {% block body %}
     <header style="position: sticky; top: 0; z-index: 100; backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); background-color: rgba(8, 12, 20, 0.75); border-bottom: 1px solid var(--border-color);">
         <nav style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; max-width: 1000px; margin: 0 auto; border-bottom: none;">
             <a href="/" class="nav-logo">
@@ -30,6 +30,7 @@
             <div style="display: flex; gap: 20px; align-items: center;">
                 <a href="/" style="color: var(--text-primary); text-decoration: none; font-size: 0.95rem; font-weight: 500;"><i class="fa-solid fa-house"></i> Blog</a>
                 <a href="https://neocast.neosite.com.ar" target="_blank" style="color: var(--text-primary); text-decoration: none; font-size: 0.95rem; font-weight: 500;">🎙️ Podcasts</a>
+                <a href="https://social.neosite.com.ar/@neoranger" target="_blank" style="color: var(--text-primary); text-decoration: none; font-size: 0.95rem; font-weight: 500;"> Fediverso</a>
                 <a href="https://github.com/neoranger" target="_blank" style="color: var(--text-primary); text-decoration: none; font-size: 0.95rem; font-weight: 500;"><i class="fa-brands fa-github"></i> GitHub</a>
                 {% for pg in nav_pages %}<a href="/p/{{ pg.slug }}" style="color: var(--text-primary); text-decoration: none; font-size: 0.95rem; font-weight: 500;"><i class="fa-regular fa-file-lines"></i> {{ pg.title }}</a>{% endfor %}
             
@@ -71,5 +72,6 @@
             </div>
         </div>
     </footer>
+    {% endblock %}
 </body>
 </html>

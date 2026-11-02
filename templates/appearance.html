@@ -1,37 +1,81 @@
-{% extends "base.html" %}{% block title %}Apariencia | Admin{% endblock %}
-{% block head %}
+{% extends "admin_base.html" %}
+
+{% block title %}Apariencia | NeoSite Blog{% endblock %}
+{% block admin_eyebrow %}Diseño{% endblock %}
+{% block admin_title %}Apariencia{% endblock %}
+
+{% block admin_head %}
 <style>
-.appearance-form input[type="text"],
-.appearance-form input:not([type]),
-.appearance-form textarea {
-    color: var(--text-primary);
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.85rem;
-}
-.appearance-form input:focus,
-.appearance-form textarea:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-}
-.appearance-form input::placeholder,
-.appearance-form textarea::placeholder {
-    color: var(--text-muted);
-}
+    .appearance-form input[type="text"],
+    .appearance-form input:not([type]),
+    .appearance-form textarea {
+        color: var(--text-primary);
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    .appearance-form input:focus,
+    .appearance-form textarea:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        background: var(--bg-surface);
+        color: var(--text-primary);
+    }
+    .appearance-form input::placeholder,
+    .appearance-form textarea::placeholder {
+        color: var(--text-muted);
+    }
 </style>
 {% endblock %}
+
 {% block content %}
-<h2>Apariencia</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin:20px 0">
-{% for t in themes %}<div class="card"><h3>{{ t.label or t.name }}</h3><p style="color:var(--text-muted)">{{ t.description or '' }}</p>
-<form method="POST" class="appearance-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="theme"><input type="hidden" name="theme" value="{{ t.name }}">
-<input type="text" name="site_title" value="{{ cfg.site_title }}" placeholder="Título sitio" style="width:100%;margin-bottom:6px">
-<div style="display:flex;gap:6px">{% for k in ['accent-primary','bg-main','text-primary'] %}<input type="text" name="var_{{ k }}" value="{{ cfg.theme_vars.get(k,'') }}" placeholder="{{ k }}" style="width:100%">{% endfor %}</div>
-<button class="btn" style="margin-top:8px">{% if cfg.theme==t.name %}Activo ✓ - Aplicar{% else %}Activar{% endif %}</button></form></div>{% endfor %}</div>
-<div class="card"><h3>CSS personalizado</h3><form method="POST" class="appearance-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="css">
-<textarea name="custom_css" rows="8" style="width:100%">{{ cfg.custom_css }}</textarea><button class="btn">Guardar CSS</button></form></div>
-<a href="{{ url_for('admin_list') }}">← Dashboard</a>{% endblock %}
+    <div class="admin-page-head">
+        <div>
+            <h2>Temas y personalización</h2>
+            <p>Elegí el tema del sitio, ajustá sus colores principales o agregá CSS propio.</p>
+        </div>
+        <div class="admin-page-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary" target="_blank" rel="noopener">
+                <i class="fa-solid fa-eye"></i> Previsualizar sitio
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-form-grid">
+        {% for t in themes %}
+        <div class="card">
+            <h3>{{ t.label or t.name }}</h3>
+            <p class="admin-form-hint">{{ t.description or 'Tema disponible para el sitio.' }}</p>
+            <form method="POST" class="appearance-form" style="margin-top: auto;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="theme">
+                <input type="hidden" name="theme" value="{{ t.name }}">
+                <input type="text" name="site_title" value="{{ cfg.site_title }}" placeholder="Título del sitio" style="width:100%;margin-bottom:8px">
+                <div style="display:flex;gap:6px;margin-bottom:8px">
+                    {% for k in ['accent-primary','bg-main','text-primary'] %}
+                    <input type="text" name="var_{{ k }}" value="{{ cfg.theme_vars.get(k,'') }}" placeholder="{{ k }}" style="width:100%">
+                    {% endfor %}
+                </div>
+                <button class="btn" style="width:100%;justify-content:center;border-radius:9px;">
+                    {% if cfg.theme == t.name %}<i class="fa-solid fa-check"></i> Activo · Aplicar{% else %}Activar{% endif %}
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card" style="margin-top: 26px;">
+        <h3 style="margin-top: 0;">CSS personalizado</h3>
+        <p class="admin-form-hint" style="margin-top: 0;">Se aplica al sitio público. Los estilos del panel de administración no se ven afectados.</p>
+        <form method="POST" class="appearance-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="css">
+            <textarea name="custom_css" rows="10" style="width:100%;font-family:monospace;" placeholder="/* Tu CSS aquí */">{{ cfg.custom_css }}</textarea>
+            <button class="btn" style="margin-top: 8px; border-radius: 9px;">
+                <i class="fa-regular fa-floppy-disk"></i> Guardar CSS
+            </button>
+        </form>
+    </div>
+{% endblock %}
