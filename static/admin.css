@@ -664,6 +664,62 @@
     border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
+/* ---------- Mensajes flash ---------- */
+
+.admin-flashes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.admin-flash {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.admin-flash > i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.admin-flash > span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.admin-flash--success {
+    color: var(--accent-secondary);
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.26);
+}
+
+.admin-flash--error {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.admin-flash__close {
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    opacity: 0.7;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.admin-flash__close:hover {
+    opacity: 1;
+}
+
 /* ---------- Formularios del admin ---------- */
 
 .admin-form-grid {

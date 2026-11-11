@@ -71,6 +71,40 @@
             flex-wrap: wrap;
         }
 
+        .meta-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(10, 15, 30, 0.8);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .meta-check input {
+            margin: 0;
+            accent-color: var(--accent-primary);
+        }
+
+        .meta-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent-primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .meta-link:hover {
+            text-decoration: underline;
+        }
+
         /* Personalización de EasyMDE para el Tema Oscuro */
         .editor-toolbar {
             background: var(--bg-surface) !important;
@@ -187,6 +221,15 @@
             <input type="text" name="category" value="{{ post.category }}" placeholder="Categoría" class="meta-input" style="width: 150px;">
             <input type="text" name="tags" value="{{ post.tags }}" placeholder="Tags (separados por coma)" class="meta-input" style="flex-grow: 1;">
             <input type="text" name="description" value="{{ post.description }}" placeholder="Descripción SEO..." class="meta-input" style="flex-grow: 2;">
+            <label class="meta-check" title="No compartir esta entrada en la cuenta del fediverso">
+                <input type="checkbox" name="fediverse_skip" value="1" {% if post.fediverse_skip %}checked{% endif %}>
+                No publicar en el fediverso
+            </label>
+            {% if post.fediverse_url %}
+                <a href="{{ post.fediverse_url }}" class="meta-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-globe"></i> Ver en el fediverso
+                </a>
+            {% endif %}
         </div>
 
         <!-- Textarea que EasyMDE convertirá -->

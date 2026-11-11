@@ -2,7 +2,29 @@
 {% block title %}{{ post.title }} | NeoSite Blog{% endblock %}
 
 {% block head %}
-    <!-- style.css ya se incluye en base.html -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='share.css') }}">
+    <link rel="canonical" href="{{ post_url }}">
+
+    <meta name="description" content="{{ og_description }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="{{ site_config.get('site_title', 'NeoSite Blog') }}">
+    <meta property="og:title" content="{{ post.title }}">
+    <meta property="og:description" content="{{ og_description }}">
+    <meta property="og:url" content="{{ post_url }}">
+    <meta property="og:image" content="{{ og_image }}">
+    <meta property="og:image:alt" content="{{ post.title }}">
+    <meta property="og:locale" content="es_AR">
+    {% if post.date %}<meta property="article:published_time" content="{{ post.date }}">{% endif %}
+    {% if post.category %}<meta property="article:section" content="{{ post.category }}">{% endif %}
+    {% for tag in share_tags %}
+        <meta property="article:tag" content="{{ tag }}">
+    {% endfor %}
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ post.title }}">
+    <meta name="twitter:description" content="{{ og_description }}">
+    <meta name="twitter:image" content="{{ og_image }}">
+    <meta name="twitter:image:alt" content="{{ post.title }}">
 {% endblock %}
 
 {% block content %}
@@ -42,8 +64,232 @@
             </div>
         {% endif %}
     </article>
-    
-    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 50px 0;">
+
+    <section class="share-section" aria-labelledby="share-title">
+        <h2 id="share-title" class="share-title">
+            <i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Compartir esta entrada
+        </h2>
+
+        <div class="share-actions">
+            <button type="button" class="share-btn share-btn-native" id="share-native" hidden>
+                <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                <span>Compartir…</span>
+            </button>
+
+            <button type="button" class="share-btn share-btn-fediverse" data-network="mastodon">
+                <i class="fa-brands fa-mastodon" aria-hidden="true"></i>
+                <span>Mastodon</span>
+            </button>
+
+            <button type="button" class="share-btn share-btn-fediverse" data-network="diaspora">
+                <i class="fa-brands fa-diaspora" aria-hidden="true"></i>
+                <span>Diaspora</span>
+            </button>
+
+            <a class="share-btn share-btn-fediverse" href="{{ share_links.bluesky }}" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-bluesky" aria-hidden="true"></i>
+                <span>Bluesky</span>
+            </a>
+
+            <a class="share-btn share-btn-secondary" href="{{ share_links.x }}" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
+                <span>X</span>
+            </a>
+
+            <a class="share-btn share-btn-secondary" href="{{ share_links.telegram }}" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-telegram" aria-hidden="true"></i>
+                <span>Telegram</span>
+            </a>
+
+            <a class="share-btn share-btn-secondary" href="{{ share_links.whatsapp }}" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                <span>WhatsApp</span>
+            </a>
+
+            <a class="share-btn share-btn-secondary" href="{{ share_links.reddit }}" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-reddit" aria-hidden="true"></i>
+                <span>Reddit</span>
+            </a>
+
+            <button type="button" class="share-btn share-btn-copy" id="share-copy">
+                <i class="fa-solid fa-link" aria-hidden="true"></i>
+                <span>Copiar enlace</span>
+            </button>
+        </div>
+
+        <noscript>
+            <p class="share-noscript">Para compartir en Mastodon o Diaspora, activá JavaScript o copiá el enlace desde la barra de direcciones.</p>
+        </noscript>
+
+        <p class="share-feedback" id="share-feedback" role="status" aria-live="polite"></p>
+    </section>
+
+    <dialog id="fediverse-dialog" class="share-dialog" aria-labelledby="fediverse-dialog-title" aria-describedby="fediverse-dialog-help">
+        <form method="dialog" id="fediverse-form">
+            <h3 id="fediverse-dialog-title">Compartir en <span id="fediverse-network-name">Mastodon</span></h3>
+            <p class="share-dialog-help" id="fediverse-dialog-help">Ingresá la dirección de tu instancia. Se guarda solo en este navegador.</p>
+            <label for="fediverse-instance" id="fediverse-instance-label">Tu instancia</label>
+            <input type="text" id="fediverse-instance" name="instance" placeholder="mastodon.social" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url" required>
+            <p class="share-dialog-error" id="fediverse-error" role="alert"></p>
+            <div class="share-dialog-actions">
+                <button type="button" class="share-btn share-btn-ghost" id="fediverse-cancel">Cancelar</button>
+                <button type="submit" class="share-btn share-btn-primary" id="fediverse-submit">Ir a compartir</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script>
+        (function () {
+            const shareData = {
+                url: {{ post_url | tojson }},
+                title: {{ (post.title or '') | tojson }}
+            };
+
+            const nativeBtn = document.getElementById('share-native');
+            const copyBtn = document.getElementById('share-copy');
+            const feedback = document.getElementById('share-feedback');
+            const dialog = document.getElementById('fediverse-dialog');
+            const form = document.getElementById('fediverse-form');
+            const input = document.getElementById('fediverse-instance');
+            const instanceLabel = document.getElementById('fediverse-instance-label');
+            const error = document.getElementById('fediverse-error');
+            const networkName = document.getElementById('fediverse-network-name');
+            const help = document.getElementById('fediverse-dialog-help');
+            const cancelBtn = document.getElementById('fediverse-cancel');
+
+            let currentNetwork = 'mastodon';
+            let feedbackTimer = null;
+
+            const networks = {
+                mastodon: {
+                    name: 'Mastodon',
+                    label: 'Tu instancia',
+                    placeholder: 'mastodon.social',
+                    storageKey: 'neocms:mastodon-instance',
+                    help: 'Funciona con Mastodon y otras instancias compatibles, como Pleroma, Akkoma o GoToSocial. Se guarda solo en este navegador.',
+                    buildUrl: (instance) => `https://${instance}/share?text=${encodeURIComponent(shareData.title + '\n\n' + shareData.url)}`
+                },
+                diaspora: {
+                    name: 'Diaspora',
+                    label: 'Tu pod',
+                    placeholder: 'diaspora.social',
+                    storageKey: 'neocms:diaspora-pod',
+                    help: 'Ingresá el pod de tu cuenta de Diaspora. Se guarda solo en este navegador.',
+                    buildUrl: (instance) => `https://${instance}/bookmarklet?title=${encodeURIComponent(shareData.title)}&url=${encodeURIComponent(shareData.url)}`
+                }
+            };
+
+            function showFeedback(message) {
+                if (!feedback) return;
+                feedback.textContent = message;
+                clearTimeout(feedbackTimer);
+                feedbackTimer = setTimeout(() => { feedback.textContent = ''; }, 3000);
+            }
+
+            function readStored(key) {
+                try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+            }
+
+            function storeValue(key, value) {
+                try { localStorage.setItem(key, value); } catch (e) { /* modo privado o storage bloqueado */ }
+            }
+
+            function normalizeInstance(value) {
+                let raw = String(value || '').trim();
+                if (!raw) return '';
+                raw = raw.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+                if (!raw || /\s/.test(raw)) return '';
+                if (!/^[a-z0-9.-]+(?::\d{1,5})?(?:\/[a-z0-9._~-]*)*$/i.test(raw)) return '';
+                return raw;
+            }
+
+            function closeDialog() {
+                if (typeof dialog.close === 'function') dialog.close();
+                else dialog.removeAttribute('open');
+            }
+
+            if (nativeBtn && navigator.share) {
+                nativeBtn.hidden = false;
+                nativeBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.share({
+                            title: shareData.title,
+                            text: shareData.title,
+                            url: shareData.url
+                        });
+                    } catch (e) {
+                        if (e && e.name !== 'AbortError') {
+                            showFeedback('No se pudo abrir el menú de compartir.');
+                        }
+                    }
+                });
+            }
+
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText(shareData.url);
+                        } else {
+                            const tmp = document.createElement('textarea');
+                            tmp.value = shareData.url;
+                            tmp.setAttribute('readonly', '');
+                            tmp.style.position = 'absolute';
+                            tmp.style.left = '-9999px';
+                            document.body.appendChild(tmp);
+                            tmp.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tmp);
+                        }
+                        showFeedback('¡Enlace copiado!');
+                    } catch (e) {
+                        showFeedback('No se pudo copiar. Copiá la URL desde el navegador.');
+                    }
+                });
+            }
+
+            function openDialog(network) {
+                const info = networks[network];
+                if (!info) return;
+                currentNetwork = network;
+                networkName.textContent = info.name;
+                instanceLabel.textContent = info.label;
+                help.textContent = info.help;
+                input.placeholder = info.placeholder;
+                input.value = readStored(info.storageKey);
+                error.textContent = '';
+                if (!dialog.open) {
+                    if (typeof dialog.showModal === 'function') dialog.showModal();
+                    else dialog.setAttribute('open', '');
+                }
+                setTimeout(() => input.focus(), 50);
+            }
+
+            document.querySelectorAll('[data-network]').forEach((btn) => {
+                btn.addEventListener('click', () => openDialog(btn.dataset.network));
+            });
+
+            cancelBtn.addEventListener('click', closeDialog);
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const info = networks[currentNetwork];
+                const instance = normalizeInstance(input.value);
+                if (!instance) {
+                    error.textContent = 'Ingresá una instancia válida, por ejemplo mastodon.social.';
+                    input.focus();
+                    return;
+                }
+                storeValue(info.storageKey, instance);
+                window.open(info.buildUrl(instance), '_blank', 'noopener,noreferrer');
+                closeDialog();
+            });
+
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog) closeDialog();
+            });
+        })();
+    </script>
 
     {% if related_posts %}
     <div class="related-section" style="margin-bottom: 50px;">

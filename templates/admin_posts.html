@@ -23,19 +23,41 @@
                 <tr>
                     <th>Título</th>
                     <th>Estado</th>
+                    <th>Fediverso</th>
                     <th>Fecha</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for post in posts %}
+                {% set is_draft = post.slug.startswith('draft_') or post.status == 'draft' %}
                 <tr>
                     <td><strong style="color: var(--text-primary); font-size: 0.95rem;">{{ post.title }}</strong></td>
                     <td>
-                        {% if post.slug.startswith('draft_') or post.status == 'draft' %}
+                        {% if is_draft %}
                             <span class="admin-badge admin-badge--warning"><i class="fa-solid fa-pen-ruler"></i> Borrador</span>
                         {% else %}
                             <span class="admin-badge admin-badge--success"><i class="fa-solid fa-circle-check"></i> Público</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if is_draft %}
+                            <span class="admin-form-hint">—</span>
+                        {% elif post.fediverse_skip %}
+                            <span class="admin-badge"><i class="fa-solid fa-ban"></i> Omitida</span>
+                        {% elif post.fediverse_url %}
+                            <a href="{{ post.fediverse_url }}" class="admin-inline-action" target="_blank" rel="noopener noreferrer">
+                                <i class="fa-solid fa-globe"></i> Publicada
+                            </a>
+                        {% elif fediverse.instance and fediverse.access_token %}
+                            <form action="{{ url_for('admin_fediverse_publish', slug=post.slug) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="admin-inline-action">
+                                    <i class="fa-solid fa-paper-plane"></i> Publicar
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="admin-form-hint">Sin configurar</span>
                         {% endif %}
                     </td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-regular fa-calendar" style="margin-right: 6px;"></i>{{ post.date }}</td>
@@ -43,7 +65,7 @@
                         <a href="{{ url_for('edit_post', slug=post.slug) }}" class="admin-inline-action">
                             <i class="fa-solid fa-pen-to-square"></i> Editar
                         </a>
-                        {% if not post.slug.startswith('draft_') %}
+                        {% if not is_draft %}
                         <a href="{{ url_for('post', slug=post.slug) }}" class="admin-inline-action" target="_blank" rel="noopener">
                             <i class="fa-solid fa-arrow-up-right-from-square"></i> Ver
                         </a>
@@ -58,7 +80,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="padding: 44px; text-align: center; color: var(--text-muted); font-style: italic;">
+                    <td colspan="5" style="padding: 44px; text-align: center; color: var(--text-muted); font-style: italic;">
                         No hay posts todavía. <a href="{{ url_for('edit_post') }}" style="color: var(--accent-primary); font-weight: 600;">¡Crea el primero!</a>
                     </td>
                 </tr>

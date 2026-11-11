@@ -43,6 +43,9 @@
             <a href="{{ url_for('admin_comments') }}" class="admin-nav__link {% if ep == 'admin_comments' %}is-active{% endif %}" {% if ep == 'admin_comments' %}aria-current="page"{% endif %}>
                 <i class="fa-solid fa-comments"></i> <span>Comentarios</span>
             </a>
+            <a href="{{ url_for('admin_fediverse') }}" class="admin-nav__link {% if ep == 'admin_fediverse' %}is-active{% endif %}" {% if ep == 'admin_fediverse' %}aria-current="page"{% endif %}>
+                <i class="fa-solid fa-globe"></i> <span>Fediverso</span>
+            </a>
 
             <span class="admin-nav__label">Diseño</span>
             <a href="{{ url_for('appearance') }}" class="admin-nav__link {% if ep == 'appearance' %}is-active{% endif %}" {% if ep == 'appearance' %}aria-current="page"{% endif %}>
@@ -94,6 +97,21 @@
         </header>
 
         <main class="admin-main">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="admin-flashes" role="status" aria-live="polite">
+                        {% for category, message in messages %}
+                            <div class="admin-flash admin-flash--{{ 'error' if category == 'error' else 'success' }}">
+                                <i class="fa-solid {{ 'fa-circle-exclamation' if category == 'error' else 'fa-circle-check' }}" aria-hidden="true"></i>
+                                <span>{{ message }}</span>
+                                <button type="button" class="admin-flash__close" aria-label="Cerrar mensaje" onclick="this.parentElement.remove()">
+                                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </main>
     </div>

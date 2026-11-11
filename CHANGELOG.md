@@ -2,6 +2,50 @@
 
 Todas las cambios relevantes de NeoCMS se documentan en este archivo.
 
+## [v1.2] — 2026-11-10
+
+Esta versión agrega la barra de compartir en las entradas y la publicación automática en el Fediverso desde el panel de administración.
+
+### 🆕 Agregado
+
+- **Barra de compartir en las entradas** con Mastodon, Diaspora, Bluesky, X, Telegram, WhatsApp, Reddit y copia del enlace. Incluye diálogo para elegir la instancia de Mastodon o Diaspora y botón nativo cuando el navegador lo soporta.
+- **Metadatos sociales** en las entradas: Open Graph, Twitter Card, `canonical`, etiquetas y tiempo de lectura.
+- **Publicación automática en el Fediverso** para instancias Mastodon-compatibles (Mastodon, Pleroma, Akkoma, GoToSocial):
+  - Pantalla `/admin/fediverse` para conectar la cuenta con un token manual.
+  - Conexión opcional con **usuario y contraseña** mediante `grant_type=password`, con registro automático de la app si faltan las credenciales de cliente.
+  - Soporte para verificación en dos pasos (2FA), credenciales inválidas, método no soportado e instancia caída.
+  - Verificación de credenciales y consulta del límite de caracteres de la instancia.
+  - Opciones de visibilidad, idioma, hashtags y activación de la publicación automática.
+  - Publicación al pasar una entrada de borrador a pública, con texto de título, enlace y hashtags.
+  - Botón manual para publicar entradas viejas o reintentar fallos.
+  - Checkbox por entrada para excluirla del Fediverso.
+  - Estado de la publicación en la lista de entradas y enlace al estado desde el editor.
+
+### 🔧 Cambiado
+
+- El editor ahora conserva todos los metadatos existentes del frontmatter al guardar; antes se perdían campos como `image`.
+- El panel de administración muestra mensajes flash de éxito y error.
+- La barra de compartir usa una grilla responsive de celdas iguales, alineada con el ancho del texto del post.
+- Se retiró la opción de compartir por Email.
+
+### 🔒 Seguridad
+
+- El token del Fediverso se guarda en `data/fediverse.json` con permisos `0600`, fuera de Git y del `config.json` versionado.
+- El token nunca se envía al HTML: solo se muestra enmascarado y se reemplaza si se escribe uno nuevo.
+- La contraseña del método usuario/contraseña se usa solo para obtener el token: no se guarda, no se muestra y no se registra en logs. Si la conexión falla, se conserva la configuración y el token anteriores.
+- Se valida la URL de la instancia y se rechazan credenciales embebidas, esquemas inseguros y direcciones privadas.
+
+### 🚀 Notas de despliegue
+
+- Reconstruir la imagen para tomar los templates, CSS y rutas nuevas:
+
+  ```bash
+  docker compose up -d --build web
+  ```
+
+- Crear el token en la instancia con el permiso `write:statuses`.
+- No hay migraciones de base de datos.
+
 ## [v1.1] — 2026-11-02
 
 **Comparación:** [`v1.0...main`](https://github.com/neoranger/neocms/compare/v1.0...main)

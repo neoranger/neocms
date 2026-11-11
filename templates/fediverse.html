@@ -1,0 +1,506 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Fediverso | NeoSite Blog{% endblock %}
+{% block admin_eyebrow %}Comunidad{% endblock %}
+{% block admin_title %}Fediverso{% endblock %}
+
+{% block admin_head %}
+<style>
+    .fediverse-form input[type="text"],
+    .fediverse-form input[type="password"],
+    .fediverse-form input[type="url"],
+    .fediverse-form select {
+        width: 100%;
+        min-height: 38px;
+        box-sizing: border-box;
+        color: var(--text-primary);
+        background: rgba(10, 15, 30, 0.8);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 0.88rem;
+    }
+    .fediverse-form input:focus,
+    .fediverse-form select:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+    .fediverse-form input::placeholder {
+        color: var(--text-muted);
+    }
+    .fediverse-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 24px;
+        align-items: start;
+    }
+    .fediverse-fields .fediverse-field {
+        margin-bottom: 18px;
+    }
+    .fediverse-fields .fediverse-field--full {
+        grid-column: 1 / -1;
+    }
+    .fediverse-field {
+        margin-bottom: 16px;
+    }
+    .fediverse-field > label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+    }
+    .fediverse-methods {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .fediverse-method {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 9px;
+        background: rgba(10, 15, 30, 0.55);
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .fediverse-method:hover,
+    .fediverse-method:has(input:checked) {
+        border-color: var(--accent-primary);
+        background: rgba(10, 15, 30, 0.85);
+    }
+    .fediverse-method input {
+        margin-top: 3px;
+        accent-color: var(--accent-primary);
+    }
+    .fediverse-method strong {
+        display: block;
+        font-size: 0.88rem;
+        color: var(--text-primary);
+    }
+    .fediverse-method small {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        color: var(--text-muted);
+    }
+    .fediverse-panel {
+        margin: 4px 0 18px;
+        padding: 16px 16px 0;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: rgba(10, 15, 30, 0.35);
+    }
+    .fediverse-panel[hidden] {
+        display: none !important;
+    }
+    .fediverse-advanced {
+        margin: 0 0 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+    }
+    .fediverse-advanced summary {
+        margin-bottom: 12px;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .fediverse-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 12px;
+        font-size: 0.86rem;
+        color: var(--text-secondary);
+    }
+    .fediverse-check input {
+        margin-top: 3px;
+        accent-color: var(--accent-primary);
+    }
+    .fediverse-status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 26px;
+        margin: 0 0 18px;
+    }
+    .fediverse-status__item {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .fediverse-status__item span {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .fediverse-status__item strong {
+        font-size: 0.92rem;
+        color: var(--text-primary);
+        word-break: break-word;
+    }
+    .fediverse-connection__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px 24px;
+        margin-bottom: 16px;
+    }
+    .fediverse-connection__head h3 {
+        margin: 0;
+    }
+    .fediverse-connection .fediverse-status {
+        margin-bottom: 0;
+    }
+    .fediverse-connection__empty {
+        margin: 0 0 8px;
+    }
+    .fediverse-help {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+    }
+    .fediverse-help summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 0.86rem;
+        font-weight: 700;
+        cursor: pointer;
+        list-style: none;
+    }
+    .fediverse-help summary::-webkit-details-marker {
+        display: none;
+    }
+    .fediverse-help summary::after {
+        content: '▾';
+        margin-left: auto;
+        line-height: 1;
+        transition: transform 0.15s ease;
+    }
+    .fediverse-help[open] summary::after {
+        transform: rotate(180deg);
+    }
+    .fediverse-help summary:hover {
+        color: var(--text-primary);
+    }
+    .fediverse-help__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 28px;
+        margin-top: 14px;
+    }
+    .fediverse-help__grid .fediverse-steps {
+        margin-bottom: 0;
+    }
+    .fediverse-help__grid .admin-form-hint {
+        margin: 0 0 10px;
+    }
+    .fediverse-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+    .fediverse-hint {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+    .fediverse-steps {
+        margin: 0 0 16px;
+        padding-left: 20px;
+        color: var(--text-secondary);
+        font-size: 0.86rem;
+        line-height: 1.7;
+    }
+    .fediverse-steps code,
+    .fediverse-hint code {
+        padding: 1px 5px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--accent-primary);
+        font-size: 0.82em;
+    }
+    .fediverse-method-title {
+        margin: 0 0 6px;
+        font-size: 0.88rem;
+        color: var(--text-primary);
+    }
+    @media (max-width: 760px) {
+        .fediverse-fields,
+        .fediverse-methods,
+        .fediverse-help__grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        .fediverse-methods {
+            gap: 10px;
+        }
+        .fediverse-help__grid {
+            gap: 10px;
+        }
+        .fediverse-panel {
+            padding: 14px 14px 0;
+        }
+        .fediverse-connection__head {
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="admin-page-head">
+        <div>
+            <h2>Publicación en el Fediverso</h2>
+            <p>Conectá una cuenta de Mastodon, Pleroma, Akkoma o GoToSocial para compartir automáticamente cada entrada nueva.</p>
+        </div>
+        <div class="admin-page-actions">
+            {% if cfg.enabled and has_token %}
+                <span class="admin-badge admin-badge--success"><i class="fa-solid fa-circle-check"></i> Automático activo</span>
+            {% elif has_token %}
+                <span class="admin-badge admin-badge--warning"><i class="fa-solid fa-pause"></i> Automático pausado</span>
+            {% else %}
+                <span class="admin-badge"><i class="fa-solid fa-plug-circle-xmark"></i> Sin conectar</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card fediverse-connection">
+        <div class="fediverse-connection__head">
+            <h3>Conexión</h3>
+            {% if has_token and cfg.instance %}
+                <div class="fediverse-actions">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="test">
+                        <button type="submit" class="btn btn-secondary" style="border-radius: 9px;">
+                            <i class="fa-solid fa-satellite-dish"></i> Probar conexión
+                        </button>
+                    </form>
+                    <form method="POST" onsubmit="return confirm('¿Desconectar la cuenta? Se eliminará el token guardado.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="disconnect">
+                        <button type="submit" class="btn btn-secondary admin-inline-action--danger" style="border-radius: 9px;">
+                            <i class="fa-solid fa-plug-circle-xmark"></i> Desconectar
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        {% if has_token and cfg.instance %}
+            <div class="fediverse-status">
+                <div class="fediverse-status__item">
+                    <span>Cuenta</span>
+                    <strong>{{ cfg.account or 'Sin verificar' }}</strong>
+                </div>
+                <div class="fediverse-status__item">
+                    <span>Instancia</span>
+                    <strong>{{ cfg.instance }}</strong>
+                </div>
+                <div class="fediverse-status__item">
+                    <span>Método</span>
+                    <strong>{% if cfg.auth_method == 'password' %}Usuario y contraseña{% else %}Token manual{% endif %}</strong>
+                </div>
+                <div class="fediverse-status__item">
+                    <span>Límite por estado</span>
+                    <strong>{{ cfg.max_chars }} caracteres</strong>
+                </div>
+                {% if cfg.connected_at %}
+                <div class="fediverse-status__item">
+                    <span>Última verificación</span>
+                    <strong>{{ (cfg.connected_at or '')[:19].replace('T', ' ') }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="admin-form-hint fediverse-connection__empty">Todavía no hay una cuenta conectada. Completá el formulario para empezar.</p>
+            <p class="admin-form-hint fediverse-connection__empty">El token se guarda en <code>data/fediverse.json</code>, fuera de Git y con permisos restringidos.</p>
+        {% endif %}
+
+        <details class="fediverse-help"{% if not (has_token and cfg.instance) %} open{% endif %}>
+            <summary><i class="fa-solid fa-circle-info"></i> Cómo conectar</summary>
+            <div class="fediverse-help__grid">
+                <div>
+                    <p class="fediverse-method-title">Token manual (recomendado)</p>
+                    <ol class="fediverse-steps">
+                        <li>Entrá a tu instancia y abrí <strong>Preferencias → Desarrollo</strong>.</li>
+                        <li>Creá una aplicación nueva con el permiso <code>write:statuses</code> (solo publicar).</li>
+                        <li>Copiá el <strong>token de acceso</strong> y pegalo en el formulario.</li>
+                        <li>Guardá: NeoCMS verifica la cuenta y consulta el límite de caracteres.</li>
+                    </ol>
+                </div>
+                <div>
+                    <p class="fediverse-method-title">Usuario y contraseña</p>
+                    <p class="admin-form-hint">
+                        Disponible en instancias que aceptan <code>password grant</code>. NeoCMS registra una app
+                        automáticamente si hace falta. La contraseña se usa solo para obtener el token y
+                        <strong>no se guarda, no se muestra y no se registra</strong>. Si tenés 2FA, agregá el código actual.
+                    </p>
+                    <p class="admin-form-hint">
+                        Podés revocar el token desde la instancia cuando quieras.
+                        Diaspora y Bluesky no usan esta integración.
+                    </p>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <div class="card" style="margin-top: 26px;">
+        <h3 style="margin-top: 0;">Configuración</h3>
+        <form method="POST" class="fediverse-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="save">
+
+            <div class="fediverse-field">
+                <label for="fediverse-instance">Instancia</label>
+                <input type="text" id="fediverse-instance" name="instance"
+                       value="{{ cfg.instance }}" placeholder="https://mastodon.social" autocomplete="off">
+                <span class="fediverse-hint">URL completa de la instancia, sin barra final.</span>
+            </div>
+
+            <div class="fediverse-field">
+                <label>Cómo querés conectar</label>
+                <div class="fediverse-methods">
+                    <label class="fediverse-method">
+                        <input type="radio" name="auth_method" value="token"
+                               {% if selected_method != 'password' %}checked{% endif %}>
+                        <span>
+                            <strong>Token manual</strong>
+                            <small>El más compatible con cualquier instancia Mastodon-compatible.</small>
+                        </span>
+                    </label>
+                    <label class="fediverse-method">
+                        <input type="radio" name="auth_method" value="password"
+                               {% if selected_method == 'password' %}checked{% endif %}>
+                        <span>
+                            <strong>Usuario y contraseña</strong>
+                            <small>La contraseña no se guarda; solo se usa para obtener el token.</small>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="fediverse-panel" id="fediverse-panel-token" data-auth-panel="token"{% if selected_method == 'password' %} hidden{% endif %}>
+                <div class="fediverse-field">
+                    <label for="fediverse-token">Token de acceso</label>
+                    <input type="password" id="fediverse-token" name="access_token" value=""
+                           placeholder="{% if has_token %}Token guardado ({{ token_hint }}). Escribí uno nuevo para reemplazarlo.{% else %}Pegá el token de acceso{% endif %}"
+                           autocomplete="new-password"{% if selected_method == 'password' %} disabled{% endif %}>
+                    {% if has_token %}
+                        <span class="fediverse-hint"><i class="fa-solid fa-lock"></i> Ya hay un token guardado. Nunca se muestra completo.</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="fediverse-panel" id="fediverse-panel-password" data-auth-panel="password"{% if selected_method != 'password' %} hidden{% endif %}>
+                <div class="fediverse-fields">
+                    <div class="fediverse-field">
+                        <label for="fediverse-user">Usuario</label>
+                        <input type="text" id="fediverse-user" name="auth_user" value="{{ form_user }}"
+                               placeholder="tu_usuario" autocomplete="username"{% if selected_method != 'password' %} disabled{% endif %}>
+                        <span class="fediverse-hint">El usuario de la instancia, sin el <code>@</code> inicial.</span>
+                    </div>
+                    <div class="fediverse-field">
+                        <label for="fediverse-password">Contraseña</label>
+                        <input type="password" id="fediverse-password" name="password" value=""
+                               placeholder="Tu contraseña (no se guarda)" autocomplete="current-password"{% if selected_method != 'password' %} disabled{% endif %}>
+                        <span class="fediverse-hint">Solo se usa para pedir el token. No queda guardada.</span>
+                    </div>
+                    <div class="fediverse-field fediverse-field--full">
+                        <label for="fediverse-otp">Código 2FA</label>
+                        <input type="text" id="fediverse-otp" name="otp" value=""
+                               placeholder="123456" inputmode="numeric" maxlength="8" autocomplete="one-time-code"{% if selected_method != 'password' %} disabled{% endif %}>
+                        <span class="fediverse-hint">Solo si tu cuenta tiene verificación en dos pasos.</span>
+                    </div>
+                </div>
+
+                <details class="fediverse-advanced">
+                    <summary>Credenciales de app (opcional)</summary>
+                    <div class="fediverse-fields">
+                        <div class="fediverse-field">
+                            <label for="fediverse-client-id">Client ID</label>
+                            <input type="text" id="fediverse-client-id" name="client_id" value="{{ cfg.client_id }}"
+                                   placeholder="Se obtiene al registrar una app" autocomplete="off"{% if selected_method != 'password' %} disabled{% endif %}>
+                        </div>
+                        <div class="fediverse-field">
+                            <label for="fediverse-client-secret">Client secret</label>
+                            <input type="password" id="fediverse-client-secret" name="client_secret" value=""
+                                   placeholder="{% if cfg.client_secret %}Guardado. Escribí uno nuevo para reemplazarlo.{% else %}Se obtiene al registrar una app{% endif %}"
+                                   autocomplete="new-password"{% if selected_method != 'password' %} disabled{% endif %}>
+                        </div>
+                    </div>
+                    <span class="fediverse-hint" style="margin: 0 0 16px;">NeoCMS registra una app automáticamente si faltan estos datos. Completalos solo si la instancia bloquea el registro.</span>
+                </details>
+            </div>
+
+            <div class="fediverse-fields">
+                <div class="fediverse-field">
+                    <label for="fediverse-visibility">Visibilidad de los estados</label>
+                    <select id="fediverse-visibility" name="visibility">
+                        {% for value, label, description in visibilities %}
+                            <option value="{{ value }}" {% if cfg.visibility == value %}selected{% endif %}>{{ label }} — {{ description }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="fediverse-hint">Se aplica a cada estado que publique NeoCMS.</span>
+                </div>
+
+                <div class="fediverse-field">
+                    <label for="fediverse-language-token">Idioma de los estados</label>
+                    <input type="text" id="fediverse-language-token" name="language" value="{{ cfg.language }}"
+                           placeholder="es" maxlength="3" autocomplete="off">
+                    <span class="fediverse-hint">Código ISO de dos letras, por ejemplo <code>es</code> o <code>en</code>.</span>
+                </div>
+            </div>
+
+            <div class="fediverse-field">
+                <label class="fediverse-check">
+                    <input type="checkbox" name="include_tags" value="1" {% if cfg.include_tags %}checked{% endif %}>
+                    <span>Incluir los tags de la entrada como hashtags en el estado.</span>
+                </label>
+                <label class="fediverse-check">
+                    <input type="checkbox" name="enabled" value="1" {% if cfg.enabled %}checked{% endif %}>
+                    <span>Publicar automáticamente cada entrada nueva cuando pase a pública.</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn" style="border-radius: 9px;">
+                <i class="fa-regular fa-floppy-disk"></i> Guardar y verificar
+            </button>
+        </form>
+    </div>
+
+    <script>
+        (function () {
+            var radios = document.querySelectorAll('input[name="auth_method"]');
+            var panels = document.querySelectorAll('[data-auth-panel]');
+
+            function updatePanels() {
+                var selected = document.querySelector('input[name="auth_method"]:checked');
+                var method = selected ? selected.value : 'token';
+                panels.forEach(function (panel) {
+                    var active = panel.getAttribute('data-auth-panel') === method;
+                    panel.hidden = !active;
+                    panel.querySelectorAll('input, select, textarea, button').forEach(function (field) {
+                        field.disabled = !active;
+                    });
+                });
+            }
+
+            radios.forEach(function (radio) {
+                radio.addEventListener('change', updatePanels);
+            });
+            updatePanels();
+        })();
+    </script>
+{% endblock %}
